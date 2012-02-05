@@ -126,7 +126,9 @@ enum {
 enum {
     kTypeESDS        = 'esds',
     kTypeAVCC        = 'avcc',
+#ifndef OMAP_ENHANCEMENT    
     kKeyHdr          = 'hdrd',  // raw data
+#endif 
 };
 
 class MetaData : public RefBase {
