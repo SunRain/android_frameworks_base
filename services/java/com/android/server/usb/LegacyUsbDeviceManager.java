@@ -414,11 +414,7 @@ public class LegacyUsbDeviceManager extends UsbDeviceManager {
                 setEnabledFunctions(mDefaultFunctions, true);
                 updateAdbNotification();
             }
-<<<<<<< HEAD
-            SystemProperties.set("persist.service.adb.enable", enable ? "1":"0");
-=======
         SystemProperties.set("persist.service.adb.enable", enable ? "1":"0");
->>>>>>> cmdefy/ics
         }
 
         private void setEnabledFunctions(String functions, boolean makeDefault) {
@@ -645,13 +641,10 @@ public class LegacyUsbDeviceManager extends UsbDeviceManager {
             }
         }
     }
-<<<<<<< HEAD
-
-    @Override
+  /*  @Override
     public void setCurrentFunction(String function, boolean makeDefault) {
         if (DEBUG) Slog.d(TAG, "setCurrentFunction(" + function + ") default: " + makeDefault);
         mHandler.sendMessage(MSG_SET_CURRENT_FUNCTION, function, makeDefault);
-    }
-=======
->>>>>>> cmdefy/ics
+    }*/
+
 }
