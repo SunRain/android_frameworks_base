@@ -756,7 +756,11 @@ void AudioSystem::AudioPolicyServiceClient::binderDied(const wp<IBinder>& who) {
 #ifdef USES_AUDIO_LEGACY
 // use emulated popcount optimization
 // http://www.df.lth.se/~john_e/gems/gem002d.html
+<<<<<<< HEAD
 uint32_t AudioSystem::popCount(uint32_t u)
+=======
+extern "C" uint32_t _ZN7android11AudioSystem8popCountEj(uint32_t u)
+>>>>>>> cmdefy/ics
 {
     u = ((u&0x55555555) + ((u>>1)&0x55555555));
     u = ((u&0x33333333) + ((u>>2)&0x33333333));
@@ -766,6 +770,7 @@ uint32_t AudioSystem::popCount(uint32_t u)
     return u;
 }
 
+<<<<<<< HEAD
 bool AudioSystem::isA2dpDevice(audio_devices device)
 {
     if ((popCount(device) == 1 ) &&
@@ -837,12 +842,19 @@ bool AudioSystem::isLowVisibility(stream_type stream)
 bool AudioSystem::isInputChannel(uint32_t channel)
 {
     if ((channel & ~AUDIO_CHANNEL_IN_ALL) == 0) {
+=======
+extern "C" bool _ZN7android11AudioSystem12isA2dpDeviceENS0_13audio_devicesE(uint32_t device)
+{
+    if ((_ZN7android11AudioSystem8popCountEj(device) == 1 ) &&
+        (device & (0x80 | 0x100 | 0x200))) {
+>>>>>>> cmdefy/ics
         return true;
     } else {
         return false;
     }
 }
 
+<<<<<<< HEAD
 bool AudioSystem::isOutputChannel(uint32_t channel)
 {
     if ((channel & ~AUDIO_CHANNEL_OUT_ALL) == 0) {
@@ -945,11 +957,18 @@ extern "C" bool _ZN7android11AudioSystem15isLowVisibilityENS0_11stream_typeE(aud
     if (stream == AUDIO_STREAM_SYSTEM ||
         stream == AUDIO_STREAM_NOTIFICATION ||
         stream == AUDIO_STREAM_RING) {
+=======
+extern "C" bool _ZN7android11AudioSystem13isInputDeviceENS0_13audio_devicesE(uint32_t device)
+{
+    if ((_ZN7android11AudioSystem8popCountEj(device) == 1 ) &&
+        (device & ~0x81ff0000 == 0)) {
+>>>>>>> cmdefy/ics
         return true;
     } else {
         return false;
     }
 }
+<<<<<<< HEAD
 */
 
 #endif /* USES_AUDIO_LEGACY */
@@ -973,6 +992,10 @@ extern "C" bool _ZN7android11AudioSystem17isSeparatedStreamE19audio_stream_type_
     return false;
 }
 #endif // YAMAHAPLAYER
+=======
+
+#endif // AUDIO_LEGACY
+>>>>>>> cmdefy/ics
 
 }; // namespace android
 

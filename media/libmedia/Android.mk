@@ -57,6 +57,7 @@ ifeq ($(BOARD_USES_AUDIO_LEGACY),true)
         AudioParameter.cpp
 
     LOCAL_CFLAGS += -DUSES_AUDIO_LEGACY
+
     ifeq ($(BOARD_USE_KINETO_COMPATIBILITY),true)
         LOCAL_CFLAGS += -DUSE_KINETO_COMPATIBILITY
     endif
