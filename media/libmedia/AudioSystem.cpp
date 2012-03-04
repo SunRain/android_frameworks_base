@@ -756,11 +756,7 @@ void AudioSystem::AudioPolicyServiceClient::binderDied(const wp<IBinder>& who) {
 #ifdef USES_AUDIO_LEGACY
 // use emulated popcount optimization
 // http://www.df.lth.se/~john_e/gems/gem002d.html
-<<<<<<< HEAD
-uint32_t AudioSystem::popCount(uint32_t u)
-=======
 extern "C" uint32_t _ZN7android11AudioSystem8popCountEj(uint32_t u)
->>>>>>> cmdefy/ics
 {
     u = ((u&0x55555555) + ((u>>1)&0x55555555));
     u = ((u&0x33333333) + ((u>>2)&0x33333333));
@@ -770,232 +766,27 @@ extern "C" uint32_t _ZN7android11AudioSystem8popCountEj(uint32_t u)
     return u;
 }
 
-<<<<<<< HEAD
-bool AudioSystem::isA2dpDevice(audio_devices device)
-{
-    if ((popCount(device) == 1 ) &&
-        (device & (AUDIO_DEVICE_OUT_BLUETOOTH_A2DP |
-                   AUDIO_DEVICE_OUT_BLUETOOTH_A2DP_HEADPHONES |
-                   AUDIO_DEVICE_OUT_BLUETOOTH_A2DP_SPEAKER))) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
-bool AudioSystem::isInputDevice(audio_devices device)
-{
-    if ((popCount(device) == 1 ) &&
-        ((device & ~AUDIO_DEVICE_IN_ALL) == 0)) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
-bool AudioSystem::isOutputDevice(audio_devices device)
-{
-    if ((popCount(device) == 1 ) &&
-        ((device & ~AUDIO_DEVICE_OUT_ALL) == 0)) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
-#ifdef HAVE_FM_RADIO
-bool AudioSystem::isFmDevice(audio_devices device)
-{
-    if ((popCount(device) == 1 ) &&
-        ((device & ~AUDIO_DEVICE_OUT_FM_ALL) == 0)) {
-        return true;
-    } else {
-        return false;
-    }
-}
-#endif
-
-bool AudioSystem::isBluetoothScoDevice(audio_devices device)
-{
-    if ((popCount(device) == 1 ) &&
-        (device & (AUDIO_DEVICE_OUT_BLUETOOTH_SCO |
-                   AUDIO_DEVICE_OUT_BLUETOOTH_SCO_HEADSET |
-                   AUDIO_DEVICE_OUT_BLUETOOTH_SCO_CARKIT |
-                   AUDIO_DEVICE_IN_BLUETOOTH_SCO_HEADSET))) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
-bool AudioSystem::isLowVisibility(stream_type stream)
-{
-    if (stream == AUDIO_STREAM_SYSTEM ||
-        stream == AUDIO_STREAM_NOTIFICATION ||
-        stream == AUDIO_STREAM_RING) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
-bool AudioSystem::isInputChannel(uint32_t channel)
-{
-    if ((channel & ~AUDIO_CHANNEL_IN_ALL) == 0) {
-=======
 extern "C" bool _ZN7android11AudioSystem12isA2dpDeviceENS0_13audio_devicesE(uint32_t device)
 {
     if ((_ZN7android11AudioSystem8popCountEj(device) == 1 ) &&
         (device & (0x80 | 0x100 | 0x200))) {
->>>>>>> cmdefy/ics
         return true;
     } else {
         return false;
     }
 }
 
-<<<<<<< HEAD
-bool AudioSystem::isOutputChannel(uint32_t channel)
-{
-    if ((channel & ~AUDIO_CHANNEL_OUT_ALL) == 0) {
-
-        return true;
-    } else {
-        return false;
-    }
-}
-
-bool AudioSystem::isValidFormat(uint32_t format)
-{
-    switch (format & AUDIO_FORMAT_MAIN_MASK) {
-    case         AUDIO_FORMAT_PCM:
-    case         AUDIO_FORMAT_MP3:
-    case         AUDIO_FORMAT_AMR_NB:
-    case         AUDIO_FORMAT_AMR_WB:
-    case         AUDIO_FORMAT_AAC:
-    case         AUDIO_FORMAT_HE_AAC_V1:
-    case         AUDIO_FORMAT_HE_AAC_V2:
-    case         AUDIO_FORMAT_VORBIS:
-        return true;
-    default:
-        return false;
-    }
-}
-
-bool AudioSystem::isLinearPCM(uint32_t format)
-{
-    switch (format) {
-    case         AUDIO_FORMAT_PCM_32_BIT:
-    case         AUDIO_FORMAT_PCM_16_BIT:
-    case         AUDIO_FORMAT_PCM_8_BIT:
-        return true;
-    default:
-        return false;
-    }
-}
-
-status_t AudioSystem::setDeviceConnectionState(audio_devices device,
-                                                  device_connection_state state,
-                                                  const char *device_address) {
-    return setDeviceConnectionState((audio_devices_t)device, (audio_policy_dev_state_t)state, device_address);
-}
-
-AudioSystem::device_connection_state AudioSystem::getDeviceConnectionState(audio_devices device,
-                                                  const char *device_address) {
-    return (device_connection_state)getDeviceConnectionState((audio_devices_t)device, device_address);
-}
-
-/*
-extern "C" uint32_t _ZN7android11AudioSystem8popCountEj(uint32_t u)
-{
-    return popcount(u);
-}
-
-extern "C" bool _ZN7android11AudioSystem12isA2dpDeviceENS0_13audio_devicesE(uint32_t device)
-{
-    return audio_is_a2dp_device((audio_devices_t)device);
-}
-
-extern "C" bool _ZN7android11AudioSystem13isInputDeviceENS0_13audio_devicesE(uint32_t device)
-{
-    return audio_is_input_device((audio_devices_t)device);
-}
-
-extern "C" bool _ZN7android11AudioSystem14isOutputDeviceENS0_13audio_devicesE(uint32_t device)
-{
-    return audio_is_output_device((audio_devices_t)device);
-}
-
-extern "C" bool _ZN7android11AudioSystem20isBluetoothScoDeviceENS0_13audio_devicesE(uint32_t device)
-{
-    return audio_is_bluetooth_sco_device((audio_devices_t)device);
-}
-
-extern "C" status_t _ZN7android11AudioSystem24setDeviceConnectionStateENS0_13audio_devicesENS0_23device_connection_stateEPKc(audio_devices_t device,
-                                               audio_policy_dev_state_t state,
-                                               const char *device_address)
-{
-    return AudioSystem::setDeviceConnectionState(device, state, device_address);
-}
-
-extern "C" audio_io_handle_t _ZN7android11AudioSystem9getOutputENS0_11stream_typeEjjjNS0_12output_flagsE(audio_stream_type_t stream,
-                                    uint32_t samplingRate,
-                                    uint32_t format,
-                                    uint32_t channels,
-                                    audio_policy_output_flags_t flags)
-{
-   return AudioSystem::getOutput(stream,samplingRate,format,channels>>2,flags);
-}
-
-extern "C" bool _ZN7android11AudioSystem11isLinearPCMEj(uint32_t format)
-{
-    return audio_is_linear_pcm(format);
-}
-
-extern "C" bool _ZN7android11AudioSystem15isLowVisibilityENS0_11stream_typeE(audio_stream_type_t stream)
-{
-    if (stream == AUDIO_STREAM_SYSTEM ||
-        stream == AUDIO_STREAM_NOTIFICATION ||
-        stream == AUDIO_STREAM_RING) {
-=======
 extern "C" bool _ZN7android11AudioSystem13isInputDeviceENS0_13audio_devicesE(uint32_t device)
 {
     if ((_ZN7android11AudioSystem8popCountEj(device) == 1 ) &&
         (device & ~0x81ff0000 == 0)) {
->>>>>>> cmdefy/ics
         return true;
     } else {
         return false;
     }
 }
-<<<<<<< HEAD
-*/
-
-#endif /* USES_AUDIO_LEGACY */
-
-#ifdef YAMAHAPLAYER
-extern "C" bool _ZN7android11AudioSystem17isSeparatedStreamE19audio_stream_type_t(audio_stream_type_t stream)
-{
-    LOGD("android::AudioSystem::isSeparatedStream(audio_stream_type_t) called!");
-    LOGD("audio_stream_type_t: %d", stream);
-
-/* this is the correct implementation, but breaks headset volume rocker.
-    if (stream == 3  || stream == 9  || stream == 10
-     || stream == 12 || stream == 13 || stream == 14)
-    {
-        LOGD("isSeparatedStream: true");
-        return true;
-    }
-*/
-
-    LOGD("isSeparatedStream: false");
-    return false;
-}
-#endif // YAMAHAPLAYER
-=======
 
 #endif // AUDIO_LEGACY
->>>>>>> cmdefy/ics
 
 }; // namespace android
 
