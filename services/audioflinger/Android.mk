@@ -30,13 +30,8 @@ LOCAL_STATIC_LIBRARIES := \
 
 LOCAL_MODULE:= libaudioflinger
 
-<<<<<<< HEAD
-ifeq ($(BOARD_USE_MOTO_DOCK_HACK),true)
-   LOCAL_CFLAGS += -DMOTO_DOCK_HACK
-=======
 ifeq ($(BOARD_USES_AUDIO_LEGACY),true)
     LOCAL_CFLAGS += -DUSES_AUDIO_LEGACY
->>>>>>> cmdefy/ics
 endif
 
 include $(BUILD_SHARED_LIBRARY)
