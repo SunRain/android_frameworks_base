@@ -1180,9 +1180,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     void readLidState() {
         try {
             int sw = mWindowManager.getSwitchState(SW_LID);
-            if (sw == 0) {
-                mLidOpen = LID_OPEN;
-            } else if (sw == 1) {
+			if (sw > 0) {
                 mLidOpen = LID_CLOSED;
             } else if (sw == 0) {
                 mLidOpen = LID_OPEN;
