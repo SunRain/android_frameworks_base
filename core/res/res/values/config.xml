@@ -775,4 +775,7 @@
     <string-array name="config_vendorServices">
     </string-array>
 
+    <!-- Asus dock compatibility disabled by default -->
+    <bool name="config_hasDockBattery">false</bool>
+
 </resources>
