@@ -2,20 +2,20 @@ LOCAL_PATH:= $(call my-dir)
 
 include $(CLEAR_VARS)
 
-ifeq ($(BOARD_USES_AUDIO_LEGACY),true)
-LOCAL_SRC_FILES:= \
-    LibMedia_Helper_Dummy.cpp
-else
 LOCAL_SRC_FILES:= \
     AudioParameter.cpp
+
+ifeq ($(BOARD_USES_QCOM_HARDWARE),true)
+    LOCAL_CFLAGS += -DQCOM_HARDWARE
 endif
+
+
 LOCAL_MODULE:= libmedia_helper
 LOCAL_MODULE_TAGS := optional
 
 include $(BUILD_STATIC_LIBRARY)
 
 include $(CLEAR_VARS)
-
 
 LOCAL_SRC_FILES:= \
     AudioTrack.cpp \
@@ -52,15 +52,18 @@ LOCAL_SRC_FILES:= \
     MemoryLeakTrackUtil.cpp \
     fixedfft.cpp.arm
 
+ifeq ($(BOARD_USES_QCOM_HARDWARE),true)
+    LOCAL_CFLAGS += -DQCOM_HARDWARE
+endif
+
 ifeq ($(BOARD_USES_AUDIO_LEGACY),true)
     LOCAL_SRC_FILES+= \
         AudioParameter.cpp
 
     LOCAL_CFLAGS += -DUSES_AUDIO_LEGACY
-
-    ifeq ($(BOARD_USE_KINETO_COMPATIBILITY),true)
+ifeq ($(BOARD_USE_KINETO_COMPATIBILITY),true)
         LOCAL_CFLAGS += -DUSE_KINETO_COMPATIBILITY
-    endif
+endif
 endif
 
 ifeq ($(BOARD_USE_YAMAHAPLAYER),true)
@@ -68,7 +71,7 @@ ifeq ($(BOARD_USE_YAMAHAPLAYER),true)
 endif
 
 LOCAL_SHARED_LIBRARIES := \
-	libui libcutils libutils libbinder libsonivox libicuuc libexpat \
+libui libcutils libutils libbinder libsonivox libicuuc libexpat \
         libcamera_client libstagefright_foundation \
         libgui libdl
 
