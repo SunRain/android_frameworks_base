@@ -138,11 +138,12 @@ public final class CdmaDataConnectionTracker extends DataConnectionTracker {
 
     }
 
-    @Override
-    public void dispose() {
-        cleanUpConnection(false, null, false);
+    public void activate() {
+        activateMe();
+    }
 
-        super.dispose();
+    public void deactivate() {
+        cleanUpConnection(false, null, false);
 
         // Unregister from all events
         mPhone.mCM.unregisterForAvailable(this);
