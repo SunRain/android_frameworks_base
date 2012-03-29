@@ -41,6 +41,7 @@ import com.android.internal.telephony.DataConnectionAc;
 import com.android.internal.telephony.DataConnectionTracker;
 import com.android.internal.telephony.EventLogTags;
 import com.android.internal.telephony.RetryManager;
+import com.android.internal.telephony.RILConstants;
 import com.android.internal.telephony.Phone;
 import com.android.internal.util.AsyncChannel;
 
@@ -98,6 +99,9 @@ public final class CdmaDataConnectionTracker extends DataConnectionTracker {
             Phone.APN_TYPE_MMS,
             Phone.APN_TYPE_HIPRI };
 
+    private String[] mDunApnTypes = {
+            Phone.APN_TYPE_DUN };
+
     private static final int mDefaultApnId = DataConnectionTracker.APN_DEFAULT_ID;
 
     /* Constructor */
@@ -154,6 +158,21 @@ public final class CdmaDataConnectionTracker extends DataConnectionTracker {
         mDataConnectionTracker = this;
 
         broadcastMessenger();
+
+        Context c = mCdmaPhone.getContext();
+        String[] t = c.getResources().getStringArray(
+                com.android.internal.R.array.config_cdma_dun_supported_types);
+        if (t != null && t.length > 0) {
+            ArrayList<String> temp = new ArrayList<String>();
+            for(int i=0; i< t.length; i++) {
+                if (!Phone.APN_TYPE_DUN.equalsIgnoreCase(t[i])) {
+                    temp.add(t[i]);
+                }
+            }
+            temp.add(0, Phone.APN_TYPE_DUN);
+            mDunApnTypes = temp.toArray(t);
+        }
+
     }
 
     public void activate() {
@@ -161,7 +180,7 @@ public final class CdmaDataConnectionTracker extends DataConnectionTracker {
     }
 
     public void deactivate() {
-        cleanUpConnection(false, null);
+        cleanUpConnection(false, null, false);
 
         // Unregister from all events
         mPhone.mCM.unregisterForAvailable(this);
@@ -337,6 +356,9 @@ _L5:
     }
 
     @Override
+    protected void restartDataStallAlarm() {}
+
+    @Override
     protected void setState(State s) {
         if (DBG) log ("setState: " + s);
         if (mState != s) {
@@ -383,7 +405,8 @@ _L5:
                     internalDataEnabled &&
                     desiredPowerState &&
                     !mPendingRestartRadio &&
-                    !mCdmaPhone.needsOtaServiceProvisioning();
+                    ((mPhone.getLteOnCdmaMode() == Phone.LTE_ON_CDMA_TRUE) ||
+                            !mCdmaPhone.needsOtaServiceProvisioning());
         if (!allowed && DBG) {
             String reason = "";
             if (!((psState == ServiceState.STATE_IN_SERVICE) || mAutoAttachOnCreation)) {
@@ -452,7 +475,7 @@ _L5:
      * @param tearDown true if the underlying DataConnection should be disconnected.
      * @param reason for the clean up.
      */
-    private void cleanUpConnection(boolean tearDown, String reason) {
+    private void cleanUpConnection(boolean tearDown, String reason, boolean doAll) {
         if (DBG) log("cleanUpConnection: reason: " + reason);
 
         // Clear the reconnect alarm, if set.
@@ -472,9 +495,15 @@ _L5:
                 DataConnectionAc dcac =
                     mDataConnectionAsyncChannels.get(conn.getDataConnectionId());
                 if (tearDown) {
-                    if (DBG) log("cleanUpConnection: teardown, call conn.disconnect");
-                    conn.tearDown(reason, obtainMessage(EVENT_DISCONNECT_DONE,
-                            conn.getDataConnectionId(), 0, reason));
+                    if (doAll) {
+                        if (DBG) log("cleanUpConnection: teardown, conn.tearDownAll");
+                        conn.tearDownAll(reason, obtainMessage(EVENT_DISCONNECT_DONE,
+                                conn.getDataConnectionId(), 0, reason));
+                    } else {
+                        if (DBG) log("cleanUpConnection: teardown, conn.tearDown");
+                        conn.tearDown(reason, obtainMessage(EVENT_DISCONNECT_DONE,
+                                conn.getDataConnectionId(), 0, reason));
+                    }
                     notificationDeferred = true;
                 } else {
                     if (DBG) log("cleanUpConnection: !tearDown, call conn.resetSynchronously");
@@ -518,8 +547,7 @@ _L5:
         String[] types;
         int apnId;
         if (mRequestedApnType.equals(Phone.APN_TYPE_DUN)) {
-            types = new String[1];
-            types[0] = Phone.APN_TYPE_DUN;
+            types = mDunApnTypes;
             apnId = DataConnectionTracker.APN_DUN_ID;
         } else {
             types = mDefaultApnTypes;
@@ -685,7 +713,7 @@ _L5:
         return retry;
     }
 
-    private void reconnectAfterFail(FailCause lastFailCauseCode, String reason) {
+    private void reconnectAfterFail(FailCause lastFailCauseCode, String reason, int retryOverride) {
         if (mState == State.FAILED) {
             /**
              * For now With CDMA we never try to reconnect on
@@ -693,9 +721,12 @@ _L5:
              * at the last time until the state is changed.
              * TODO: Make this configurable?
              */
-            int nextReconnectDelay = mDataConnections.get(0).getRetryTimer();
+            int nextReconnectDelay = retryOverride;
+            if (nextReconnectDelay < 0) {
+                nextReconnectDelay = mDataConnections.get(0).getRetryTimer();
+                mDataConnections.get(0).increaseRetryCount();
+            }
             startAlarmForReconnect(nextReconnectDelay, reason);
-            mDataConnections.get(0).increaseRetryCount();
 
             if (!shouldPostNotification(lastFailCauseCode)) {
                 log("NOT Posting Data Connection Unavailable notification "
@@ -754,7 +785,7 @@ _L5:
     @Override
     protected void onEnableNewApn() {
         // No mRequestedApnType check; only one connection is supported
-        cleanUpConnection(true, Phone.REASON_APN_SWITCHED);
+        cleanUpConnection(true, Phone.REASON_APN_SWITCHED, false);
     }
 
     /**
@@ -853,7 +884,17 @@ _L5:
                 notifyNoData(cause);
                 return;
             }
-            startDelayedRetry(cause, reason);
+
+            int retryOverride = -1;
+            if (ar.exception instanceof DataConnection.CallSetupException) {
+                retryOverride =
+                    ((DataConnection.CallSetupException)ar.exception).getRetryOverride();
+            }
+            if (retryOverride == RILConstants.MAX_INT) {
+                if (DBG) log("No retry is suggested.");
+            } else {
+                startDelayedRetry(cause, reason, retryOverride);
+            }
         }
     }
 
@@ -926,13 +967,13 @@ _L5:
     @Override
     protected void onCleanUpConnection(boolean tearDown, int apnId, String reason) {
         // No apnId check; only one connection is supported
-        cleanUpConnection(tearDown, reason);
+        cleanUpConnection(tearDown, reason, (apnId == APN_DUN_ID));
     }
 
     @Override
     protected void onCleanUpAllConnections(String cause) {
         // Only one CDMA connection is supported
-        cleanUpConnection(true, cause);
+        cleanUpConnection(true, cause, false);
     }
 
     private void createAllDataConnectionList() {
@@ -951,7 +992,7 @@ _L5:
             }
 
             int id = mUniqueIdGenerator.getAndIncrement();
-            dataConn = CdmaDataConnection.makeDataConnection(mCdmaPhone, id, rm);
+            dataConn = CdmaDataConnection.makeDataConnection(mCdmaPhone, id, rm, this);
             mDataConnections.put(id, dataConn);
             DataConnectionAc dcac = new DataConnectionAc(dataConn, LOG_TAG);
             int status = dcac.fullyConnectSync(mPhone.getContext(), this, dataConn.getHandler());
@@ -978,7 +1019,7 @@ _L5:
             notifyDataConnection(Phone.REASON_CDMA_DATA_DETACHED);
         } else {
             if (mState == State.FAILED) {
-                cleanUpConnection(false, Phone.REASON_CDMA_DATA_DETACHED);
+                cleanUpConnection(false, Phone.REASON_CDMA_DATA_DETACHED, false);
                 mDataConnections.get(0).resetRetryCount();
 
                 CdmaCellLocation loc = (CdmaCellLocation)(mPhone.getCellLocation());
@@ -1057,7 +1098,7 @@ _L5:
                 log("onDataStateChanged: No active connection"
                         + "state is CONNECTED, disconnecting/cleanup");
                 writeEventLogCdmaDataDrop();
-                cleanUpConnection(true, null);
+                cleanUpConnection(true, null, false);
                 return;
             }
 
@@ -1086,9 +1127,9 @@ _L5:
         }
     }
 
-    private void startDelayedRetry(FailCause cause, String reason) {
+    private void startDelayedRetry(FailCause cause, String reason, int retryOverride) {
         notifyNoData(cause);
-        reconnectAfterFail(cause, reason);
+        reconnectAfterFail(cause, reason, retryOverride);
     }
 
     @Override
