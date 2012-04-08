@@ -32,7 +32,6 @@ import java.util.Collections;
  *
  * {@hide}
  */
-//public class MotoWrigley3GRIL extends RIL implements CommandsInterface {
 public class MotoWrigley3GRIL extends RIL {
 
     public MotoWrigley3GRIL(Context context, int networkMode, int cdmaSubscription) {

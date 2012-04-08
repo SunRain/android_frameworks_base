@@ -75,8 +75,7 @@ public class LegacyUsbDeviceManager extends UsbDeviceManager {
     private static final String FUNCTIONS_PATH =
             "/sys/devices/virtual/usb_composite/";
     private static final String MASS_STORAGE_FILE_PATH =
-            //Resources.getSystem().getString(com.android.internal.R.string.config_legacyUmsLunFile);
-            "/sys/devices/platform/usb_mass_storage/lun0/file";
+            Resources.getSystem().getString(com.android.internal.R.string.config_legacyUmsLunFile);
 
     private static final int MSG_UPDATE_STATE = 0;
     private static final int MSG_ENABLE_ADB = 1;
@@ -414,7 +413,7 @@ public class LegacyUsbDeviceManager extends UsbDeviceManager {
                 setEnabledFunctions(mDefaultFunctions, true);
                 updateAdbNotification();
             }
-        SystemProperties.set("persist.service.adb.enable", enable ? "1":"0");
+            SystemProperties.set("persist.service.adb.enable", enable ? "1":"0");
         }
 
         private void setEnabledFunctions(String functions, boolean makeDefault) {
@@ -641,10 +640,10 @@ public class LegacyUsbDeviceManager extends UsbDeviceManager {
             }
         }
     }
-  /*  @Override
+
+    @Override
     public void setCurrentFunction(String function, boolean makeDefault) {
         if (DEBUG) Slog.d(TAG, "setCurrentFunction(" + function + ") default: " + makeDefault);
         mHandler.sendMessage(MSG_SET_CURRENT_FUNCTION, function, makeDefault);
-    }*/
-
+    }
 }
