@@ -4425,7 +4425,7 @@ private final void removeActivityFromHistoryLocked(ActivityRecord r) {
         if (DEBUG_TRANSITION) Slog.v(TAG,
                 "Prepare to back transition: task=" + task);
         
-        final int N = mHistory.size();
+        //final int N = mHistory.size();
         int bottom = 0;
         int pos = 0;
 

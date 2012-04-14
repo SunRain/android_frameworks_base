@@ -10633,7 +10633,7 @@ public class WindowManagerService extends IWindowManager.Stub
                 Slog.v(TAG, "1ST PASS " + win
                         + ": gone=" + gone + " mHaveFrame=" + win.mHaveFrame
                         + " mLayoutAttached=" + win.mLayoutAttached);
-                final AppWindowToken atoken = win.mAppToken;
+               // final AppWindowToken atoken = win.mAppToken;
                 if (gone) Slog.v(TAG, "  GONE: mViewVisibility="
                         + win.mViewVisibility + " mRelayoutCalled="
                         + win.mRelayoutCalled + " hidden="
