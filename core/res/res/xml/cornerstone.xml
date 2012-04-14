@@ -28,6 +28,29 @@
 		<pkg>com.onskreen.cornerstone.launcher</pkg>
 		<class>com.onskreen.cornerstone.launcher.CSLauncher</class>
 	</launcher>
+	<layout width="960" height="540">
+		<landscape>
+			<width>320</width>
+			<height>240</height>
+			<handler>
+				<width>20</width>
+			</handler>
+			<appheader>
+				<height>15</height>
+			</appheader>
+		</landscape>
+		<portrait>
+			<width>240</width>
+			<height>320</height>
+			<handler>
+				<width>20</width>
+			</handler>
+			<appheader>
+				<height>15</height>
+			</appheader>
+			<gutter>4</gutter>
+		</portrait>
+	</layout>
 	<layout width="1024" height="600">
 		<landscape>
 			<width>450</width>
