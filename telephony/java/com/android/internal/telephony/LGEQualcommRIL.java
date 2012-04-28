@@ -21,6 +21,8 @@ import static com.android.internal.telephony.RILConstants.*;
 import android.content.Context;
 import android.os.Message;
 import android.os.Parcel;
+import android.os.AsyncResult;
+import android.os.SystemProperties;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -33,6 +35,7 @@ import java.util.ArrayList;
  */
 public class LGEQualcommRIL extends QualcommNoSimReadyRIL implements CommandsInterface {
     protected String mAid;
+    protected int mPinState;
     boolean RILJ_LOGV = true;
     boolean RILJ_LOGD = true;
 
@@ -180,7 +183,7 @@ public class LGEQualcommRIL extends QualcommNoSimReadyRIL implements CommandsInt
         rr.mp.writeString(user);
         rr.mp.writeString(password);
         rr.mp.writeString(authType);
-        rr.mp.writeString("0"); // ipVersion
+        rr.mp.writeString("IP"); // ipVersion
 
         if (RILJ_LOGD) riljLog(rr.serialString() + "> "
                 + requestToString(rr.mRequest) + " " + radioTechnology + " "
@@ -246,16 +249,24 @@ public class LGEQualcommRIL extends QualcommNoSimReadyRIL implements CommandsInt
         if (RILJ_LOGD) riljLog(rr.serialString() + "> " + requestToString(rr.mRequest)
                     + " aid: " + mAid + " facility: " + facility);
 
-        // count strings
-        rr.mp.writeInt(4);
+        if (facility.equals("SC") &&
+               SystemProperties.get("ro.cm.device").indexOf("e73") == 0) {
+            int [] iccstatus = new int[1];
+            iccstatus[0] = mPinState;
+            AsyncResult.forMessage(response, iccstatus, null);
+            response.sendToTarget();
+        } else {
+            // count strings
+            rr.mp.writeInt(4);
 
-        rr.mp.writeString(mAid);
-        rr.mp.writeString(facility);
-        rr.mp.writeString(password);
+            rr.mp.writeString(mAid);
+            rr.mp.writeString(facility);
+            rr.mp.writeString(password);
 
-        rr.mp.writeString(Integer.toString(serviceClass));
+            rr.mp.writeString(Integer.toString(serviceClass));
 
-        send(rr);
+            send(rr);
+        }
     }
 
     @Override
@@ -342,6 +353,8 @@ public class LGEQualcommRIL extends QualcommNoSimReadyRIL implements CommandsInt
 
         IccCardApplication application = status.getApplication(appIndex);
         mAid = application.aid;
+        mPinState = (application.pin1 == IccCardStatus.PinState.PINSTATE_DISABLED || 
+                     application.pin1 == IccCardStatus.PinState.PINSTATE_UNKNOWN) ? 0 : 1;
 
         return status;
     }
@@ -349,6 +362,11 @@ public class LGEQualcommRIL extends QualcommNoSimReadyRIL implements CommandsInt
     @Override
     protected DataCallState getDataCallState(Parcel p, int version) {
         DataCallState dataCall = new DataCallState();
+
+        boolean oldRil = needsOldRilFeature("datacall");
+
+        if (!oldRil)
+           return super.getDataCallState(p, version);
 
         dataCall.version = 3; // was dataCall.version = version;
         dataCall.cid = p.readInt();
@@ -362,6 +380,11 @@ public class LGEQualcommRIL extends QualcommNoSimReadyRIL implements CommandsInt
         dataCall.ifname = "rmnet0";
         p.readInt(); // RadioTechnology
         p.readInt(); // inactiveReason
+
+        dataCall.dnses = new String[2];
+        dataCall.dnses[0] = SystemProperties.get("net."+dataCall.ifname+".dns1");
+        dataCall.dnses[1] = SystemProperties.get("net."+dataCall.ifname+".dns2");
+
         return dataCall;
     }
 
@@ -369,6 +392,11 @@ public class LGEQualcommRIL extends QualcommNoSimReadyRIL implements CommandsInt
     protected Object
     responseSetupDataCall(Parcel p) {
         DataCallState dataCall;
+
+        boolean oldRil = needsOldRilFeature("datacall");
+
+        if (!oldRil)
+           return super.responseSetupDataCall(p);
 
         dataCall = new DataCallState();
         dataCall.version = 3;
@@ -383,6 +411,13 @@ public class LGEQualcommRIL extends QualcommNoSimReadyRIL implements CommandsInt
         if (!TextUtils.isEmpty(addresses)) {
           dataCall.addresses = addresses.split(" ");
         }
+
+        dataCall.dnses = new String[2];
+        dataCall.dnses[0] = SystemProperties.get("net."+dataCall.ifname+".dns1");
+        dataCall.dnses[1] = SystemProperties.get("net."+dataCall.ifname+".dns2");
+        dataCall.active = 1;
+        dataCall.status = 0;
+
         return dataCall;
     }
 
