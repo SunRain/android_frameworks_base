@@ -3413,6 +3413,85 @@ public final class Settings {
         public static final String NOTIFICATION_BATTERY_DISPLAY = "notification_battery_display";
 
         /**
+         * custom lockscreen text color
+         * @hide
+         */
+        public static final String LOCKSCREEN_CUSTOM_TEXT_COLOR = "lockscreen_custom_text_color";
+
+        /**
+         * Setting to allow % on lockscreen always showing.
+         * @hide
+         */
+        public static final String LOCKSCREEN_BATTERY = "lockscreen_battery";
+
+        /**
+         * Whether to show weather on lockscreen
+         * @hide
+         */
+        public static final String LOCKSCREEN_WEATHER = "lockscreen_weather";
+
+        /**
+         * Style of weather shown on lockscreen (text or panel)
+         * @hide
+         */
+        public static final String LOCKSCREEN_WEATHER_TYPE = "lockscreen_weather_type";
+
+        /**
+         * Whether to show upcoming events on lockscreen
+         * @hide
+         */
+        public static final String LOCKSCREEN_CALENDAR = "lockscreen_calendar";
+        
+        /**
+         * Whether to flip the calendar indicator
+         * @hide
+         */
+        public static final String LOCKSCREEN_CALENDAR_FLIP = "lockscreen_calendar_flip";
+        
+        /**
+         * Selected calendars to get the events from
+         * @hide
+         */
+        public static final String LOCKSCREEN_CALENDAR_SOURCES = "lockscreen_calendar_sources";
+        
+        /**
+         * Time range of the pulled events
+         * @hide
+         */
+        public static final String LOCKSCREEN_CALENDAR_RANGE = "lockscreen_calendar_range";
+        
+        /**
+         * Whether to hide an event if it already started
+         * @hide
+         */
+        public static final String LOCKSCREEN_CALENDAR_HIDE_ONGOING = "lockscreen_calendar_hide_ongoing";
+        
+        /**
+         * Whether to show an event in the color of the parent calendar
+         * @hide
+         */
+        public static final String LOCKSCREEN_CALENDAR_USE_COLORS = "lockscreen_calendar_use_colors";
+        
+        /**
+         * If flipping, interval of flips
+         * @hide
+         */
+        public static final String LOCKSCREEN_CALENDAR_INTERVAL = "lockscreen_calendar_interval";
+
+        /**
+         * Whether to show the stock music layout on the lockscreen
+         * @hide
+         */
+        public static final String LOCKSCREEN_STOCK_MUSIC_LAYOUT = "lockscreen_stock_music_layout";
+
+        /**
+         * How to show weather on the statusbar
+         *
+         * @hide
+         */
+        public static final String STATUSBAR_WEATHER_STYLE = "statusbar_weather_style";
+
+        /**
          * Whether to show the battery bar
          * 
          * @hide

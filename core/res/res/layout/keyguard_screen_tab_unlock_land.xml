@@ -24,7 +24,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:rowCount="7"
+    android:rowCount="8"
     android:id="@+id/root"
     android:clipChildren="false">
 
@@ -227,7 +227,7 @@
         />
 
     <!-- Column 1 -->
-    <Space android:layout_width="64dip" android:layout_rowSpan="7" />
+    <Space android:layout_width="64dip" android:layout_rowSpan="8" />
 
     <!-- Column 2 -->
     <com.android.internal.widget.multiwaveview.GlowPadView
