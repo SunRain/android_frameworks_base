@@ -38,7 +38,7 @@
 #include <utils/Errors.h>
 #include <utils/Log.h>
 #include <utils/String16.h>
-
+#include <system/camera.h>
 #include "CameraService.h"
 #include "CameraHardwareInterface.h"
 
@@ -673,6 +673,11 @@ status_t CameraService::Client::startPreviewMode() {
         native_window_set_buffers_transform(mPreviewWindow.get(),
                 mOrientation);
     }
+
+#ifdef OMAP_ENHANCEMENT
+    disableMsgType(CAMERA_MSG_COMPRESSED_BURST_IMAGE);
+#endif
+
     mHardware->setPreviewWindow(mPreviewWindow);
     result = mHardware->startPreview();
 
@@ -713,6 +718,19 @@ void CameraService::Client::stopPreview() {
     Mutex::Autolock lock(mLock);
     if (checkPidAndHardware() != NO_ERROR) return;
 
+#ifdef OMAP_ENHANCEMENT
+
+    //According to framework documentation, preview needs
+    //to be started for image capture. This will make sure
+    //that image capture related messages get disabled if
+    //not done already in their respective handlers.
+    //If these messages come when in the midddle of
+    //stopping preview. We will deadlock the system in
+    //lockIfMessageWanted()
+
+    disableMsgType(CAMERA_MSG_POSTVIEW_FRAME);
+
+#endif
 
     disableMsgType(CAMERA_MSG_PREVIEW_FRAME);
     mHardware->stopPreview();
@@ -788,7 +806,6 @@ status_t CameraService::Client::cancelAutoFocus() {
 
 // take a picture - image is returned in callback
 status_t CameraService::Client::takePicture(int msgType) {
-    char prop[PROPERTY_VALUE_MAX];
     LOG1("takePicture (pid %d): 0x%x", getCallingPid(), msgType);
 
     Mutex::Autolock lock(mLock);
@@ -810,14 +827,13 @@ status_t CameraService::Client::takePicture(int msgType) {
                            CAMERA_MSG_RAW_IMAGE |
                            CAMERA_MSG_RAW_IMAGE_NOTIFY |
                            CAMERA_MSG_COMPRESSED_IMAGE);
+#ifdef OMAP_ENHANCEMENT
+    picMsgType |= CAMERA_MSG_COMPRESSED_BURST_IMAGE;
+#endif
     disableMsgType(CAMERA_MSG_PREVIEW_METADATA);
     enableMsgType(picMsgType);
-    memset(prop, 0, sizeof(prop));
-    property_get("persist.camera.snapshot.number", prop, "0");
-    mburstCnt = atoi(prop);
-    if (!mburstCnt) {
-        mburstCnt = mHardware->getParameters().getInt("num-snaps-per-shutter");
-    }
+    mburstCnt = mHardware->getParameters().getInt("num-snaps-per-shutter");
+    if(mburstCnt <= 0) mburstCnt = 1;
     LOG1("mburstCnt = %d", mburstCnt);
     return mHardware->takePicture();
 }
@@ -1030,7 +1046,7 @@ void CameraService::Client::dataCallback(int32_t msgType,
 
     if (dataPtr == 0 && metadata == NULL) {
         LOGE("Null data returned in data callback");
-        client->handleGenericNotify(CAMERA_MSG_ERROR, UNKNOWN_ERROR, 0);
+        client->handleGenericNotify(CAMERA_MSG_ERROR, CAMERA_ERROR_UNKNOWN, 0);
         return;
     }
 
@@ -1047,6 +1063,11 @@ void CameraService::Client::dataCallback(int32_t msgType,
         case CAMERA_MSG_COMPRESSED_IMAGE:
             client->handleCompressedPicture(dataPtr);
             break;
+#ifdef OMAP_ENHANCEMENT
+        case CAMERA_MSG_COMPRESSED_BURST_IMAGE:
+            client->handleCompressedBurstPicture(dataPtr);
+            break;
+#endif
         default:
             client->handleGenericData(msgType, dataPtr, metadata);
             break;
@@ -1174,6 +1195,20 @@ void CameraService::Client::handleCompressedPicture(const sp<IMemory>& mem) {
     }
 }
 
+#ifdef OMAP_ENHANCEMENT
+// burst picture callback - compressed picture ready
+void CameraService::Client::handleCompressedBurstPicture(const sp<IMemory>& mem) {
+    // Don't disable this message type yet. In this mode takePicture() will
+    // get called only once. When burst finishes this message will get automatically
+    // disabled in the respective call for restarting the preview.
+
+    sp<ICameraClient> c = mCameraClient;
+    mLock.unlock();
+    if (c != 0) {
+        c->dataCallback(CAMERA_MSG_COMPRESSED_IMAGE, mem, NULL);
+    }
+}
+#endif
 
 void CameraService::Client::handleGenericNotify(int32_t msgType,
     int32_t ext1, int32_t ext2) {

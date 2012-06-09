@@ -33,7 +33,6 @@ import java.util.ArrayList;
  * {@hide}
  */
 public class LGEQualcommUiccRIL extends QualcommSharedRIL implements CommandsInterface {
-    protected boolean mUSIM;
     boolean RILJ_LOGV = true;
     boolean RILJ_LOGD = true;
 
@@ -41,6 +40,7 @@ public class LGEQualcommUiccRIL extends QualcommSharedRIL implements CommandsInt
         super(context, networkMode, cdmaSubscription);
     }
 
+    /*
     @Override
     public void
     setupDataCall(String radioTechnology, String profile, String apn,
@@ -79,6 +79,7 @@ public class LGEQualcommUiccRIL extends QualcommSharedRIL implements CommandsInt
 
         send(rr);
     }
+    */
 
     @Override
     protected Object
