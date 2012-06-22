@@ -111,7 +111,6 @@ public class DataCallState {
 
         // Start with clean network properties and if we have
         // a failure we'll clear again at the bottom of this code.
-
         if (linkProperties == null)
             linkProperties = new LinkProperties();
         else
