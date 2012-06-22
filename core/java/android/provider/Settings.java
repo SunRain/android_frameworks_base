@@ -1529,6 +1529,18 @@ public final class Settings {
         public static final String LIGHT_FILTER_INTERVAL = "light_filter_interval";
 
         /**
+         * Whether to enable the electron beam animation when turning screen on
+         *
+         * @hide */
+        public static final String ELECTRON_BEAM_ANIMATION_ON = "electron_beam_animation_on";
+
+        /**
+         * Whether to enable the electron beam animation when turning screen off
+         *
+         * @hide */
+        public static final String ELECTRON_BEAM_ANIMATION_OFF = "electron_beam_animation_off";
+
+        /**
          * Control whether the process CPU usage meter should be shown.
          */
         public static final String SHOW_PROCESSES = "show_processes";
@@ -1628,6 +1640,7 @@ public final class Settings {
 
         /**
          * Whether to prevent loud volume levels when headset is first plugged in.
+         * @hide
          */
         public static final String SAFE_HEADSET_VOLUME_RESTORE = "safe_headset_volume_restore";
 
@@ -1997,6 +2010,11 @@ public final class Settings {
          */
         public static final String NOTIFICATION_LIGHT_PULSE_CUSTOM_VALUES = "notification_light_pulse_custom_values";
 
+        /** Sprint MWI Quirk: Show message wait indicator notifications
+         * @hide
+         */
+        public static final String ENABLE_MWI_NOTIFICATION = "enable_mwi_notification";
+
         /**
          * Show pointer location on screen?
          * 0 = no
@@ -2004,6 +2022,14 @@ public final class Settings {
          * @hide
          */
         public static final String POINTER_LOCATION = "pointer_location";
+
+        /**
+         * Show icon when stylus is used?
+         * 0 = no
+         * 1 = yes
+         * @hide
+         */
+        public static final String STYLUS_ICON_ENABLED = "stylus_icon_enabled";
 
         /**
          * Show touch positions on screen?
@@ -2206,6 +2232,13 @@ public final class Settings {
         public static final String WIDGET_BUTTONS = "expanded_widget_buttons";
 
         /**
+         * Widget Buttons to Use - Tablet
+         *
+         * @hide
+         */
+        public static final String WIDGET_BUTTONS_TABLET = "expanded_widget_buttons_tablet";
+
+        /**
          * Navigation controls to Use
          *
          * @hide
@@ -2301,6 +2334,12 @@ public final class Settings {
          * @hide
          */
         public static final String STATUS_BAR_BRIGHTNESS_CONTROL = "status_bar_brightness_control";
+
+        /**
+         * Whether to show the IME switcher in the status bar
+         * @hide
+         */
+        public static final String STATUS_BAR_IME_SWITCHER = "status_bar_ime_switcher";
 
         /**
          * Whether to use a separate delay for "slide to unlock" and security
@@ -2409,6 +2448,12 @@ public final class Settings {
         public static final String QUIET_HOURS_DIM = "quiet_hours_dim";
 
         /**
+         * Sets the lockscreen background style
+         * @hide
+         */
+        public static final String LOCKSCREEN_BACKGROUND = "lockscreen_background";
+
+        /**
          * Show the weather on the lock screen
          * @hide
          */
@@ -2449,6 +2494,54 @@ public final class Settings {
          * @hide
          */
         public static final String WEATHER_USE_METRIC = "weather_use_metric";
+
+        /**
+         * Invert low/high temperature display
+         * @hide
+         */
+        public static final String WEATHER_INVERT_LOWHIGH = "weather_invert_lowhigh";
+
+        /**
+         * Whether to show the next calendar event
+         * @hide
+         */
+        public static final String LOCKSCREEN_CALENDAR = "lockscreen_calendar";
+
+        /**
+         * Whether to show the next calendar event's location
+         * @hide
+         */
+        public static final String LOCKSCREEN_CALENDAR_SHOW_LOCATION = "lockscreen_calendar_show_location";
+
+        /**
+         * Whether to show the next calendar event's description
+         * @hide
+         */
+        public static final String LOCKSCREEN_CALENDAR_SHOW_DESCRIPTION = "lockscreen_calendar_show_description";
+
+        /**
+         * Which calendars to look for events
+         * @hide
+         */
+        public static final String LOCKSCREEN_CALENDARS = "lockscreen_calendars";
+
+        /**
+         * How far in the future to look for events
+         * @hide
+         */
+        public static final String LOCKSCREEN_CALENDAR_LOOKAHEAD = "lockscreen_calendar_lookahead";
+
+        /**
+         * Whether to find only events with reminders
+         * @hide
+         */
+        public static final String LOCKSCREEN_CALENDAR_REMINDERS_ONLY = "lockscreen_calendar_reminders_only";
+
+        /**
+         * Show the pending notification counts as overlays on the status bar
+         * @hide
+         */
+        public static final String STATUS_BAR_NOTIF_COUNT = "status_bar_notif_count";
 
         /**
          * Settings to backup. This is here so that it's in the same place as the settings
@@ -3034,6 +3127,12 @@ public final class Settings {
          * @hide
          */
         public static final String ADB_PORT = "adb_port";
+
+        /**
+         * The hostname for this device
+         * @hide
+         */
+        public static final String DEVICE_HOSTNAME = "device_hostname";
 
         /**
          * Setting to allow mock locations and location provider status to be injected into the

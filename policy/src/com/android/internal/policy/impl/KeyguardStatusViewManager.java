@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2011 The Android Open Source Project
+ * Copyright (C) 2012 The CyanogenMod Project (Weather, Calendar)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +16,6 @@
  */
 
 package com.android.internal.policy.impl;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Date;
-
-import libcore.util.MutableInt;
-
-import org.w3c.dom.Document;
 
 import android.content.ContentResolver;
 import android.content.Context;
@@ -40,6 +33,7 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
@@ -53,6 +47,14 @@ import com.android.internal.util.weather.WeatherXmlParser;
 import com.android.internal.util.weather.YahooPlaceFinder;
 import com.android.internal.widget.LockPatternUtils;
 import com.android.internal.widget.TransportControlView;
+
+import org.w3c.dom.Document;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Date;
+
+import libcore.util.MutableInt;
 
 /***
  * Manages a number of views inside of LockScreen layouts. See below for a list of widgets
@@ -87,9 +89,11 @@ class KeyguardStatusViewManager implements OnClickListener {
     private TextView mOwnerInfoView;
     private TextView mAlarmStatusView;
     private TransportControlView mTransportView;
-    private RelativeLayout mWeatherPanel;
-    private TextView mWeatherCity, mWeatherCondition, mWeatherLowHigh, mWeatherTemp, mUpdateTime;
+    private RelativeLayout mWeatherPanel, mWeatherTempsPanel;
+    private TextView mWeatherCity, mWeatherCondition, mWeatherLowHigh, mWeatherTemp, mWeatherUpdateTime;
     private ImageView mWeatherImage;
+    private LinearLayout mCalendarPanel;
+    private TextView mCalendarEventTitle, mCalendarEventDetails;
 
     // Top-level container view for above views
     private View mContainer;
@@ -207,12 +211,23 @@ class KeyguardStatusViewManager implements OnClickListener {
         mWeatherImage = (ImageView) findViewById(R.id.weather_image);
         mWeatherTemp = (TextView) findViewById(R.id.weather_temp);
         mWeatherLowHigh = (TextView) findViewById(R.id.weather_low_high);
-        mUpdateTime = (TextView) findViewById(R.id.update_time);
+        mWeatherUpdateTime = (TextView) findViewById(R.id.update_time);
+        mWeatherTempsPanel = (RelativeLayout) findViewById(R.id.weather_temps_panel);
 
         // Hide Weather panel view until we know we need to show it.
         if (mWeatherPanel != null) {
             mWeatherPanel.setVisibility(View.GONE);
             mWeatherPanel.setOnClickListener(this);
+        }
+
+        // Calendar panel
+        mCalendarPanel = (LinearLayout) findViewById(R.id.calendar_panel);
+        mCalendarEventTitle = (TextView) findViewById(R.id.calendar_event_title);
+        mCalendarEventDetails = (TextView) findViewById(R.id.calendar_event_details);
+
+        // Hide calendar panel view until we know we need to show it.
+        if (mCalendarPanel != null) {
+            mCalendarPanel.setVisibility(View.GONE);
         }
 
         // Hide transport control view until we know we need to show it.
@@ -235,10 +250,11 @@ class KeyguardStatusViewManager implements OnClickListener {
         refreshDate();
         updateOwnerInfo();
         refreshWeather();
+        refreshCalendar();
 
         // Required to get Marquee to work.
         final View scrollableViews[] = { mCarrierView, mDateView, mStatus1View, mOwnerInfoView,
-                mAlarmStatusView };
+                mAlarmStatusView, mCalendarEventDetails, mWeatherCity, mWeatherCondition };
         for (View v : scrollableViews) {
             if (v != null) {
                 v.setSelected(true);
@@ -346,11 +362,15 @@ class KeyguardStatusViewManager implements OnClickListener {
     private void refreshWeather() {
         final ContentResolver resolver = getContext().getContentResolver();
         boolean showWeather = Settings.System.getInt(resolver,Settings.System.LOCKSCREEN_WEATHER, 0) == 1;
+
         if (showWeather) {
             final long interval = Settings.System.getLong(resolver,
                     Settings.System.WEATHER_UPDATE_INTERVAL, 60); // Default to hourly
-            if (((System.currentTimeMillis() - mWeatherInfo.last_sync) / 60000) >= interval) {
+            boolean manualSync = (interval == 0);
+            if (!manualSync && (((System.currentTimeMillis() - mWeatherInfo.last_sync) / 60000) >= interval)) {
                 mHandler.sendEmptyMessage(QUERY_WEATHER);
+            } else if (manualSync && mWeatherInfo.last_sync == 0) {
+                setNoWeatherData();
             } else {
                 setWeatherData(mWeatherInfo);
             }
@@ -373,29 +393,10 @@ class KeyguardStatusViewManager implements OnClickListener {
                 Settings.System.WEATHER_SHOW_LOCATION, 1) == 1;
         boolean showTimestamp = Settings.System.getInt(resolver,
                 Settings.System.WEATHER_SHOW_TIMESTAMP, 1) == 1;
+        boolean invertLowhigh = Settings.System.getInt(resolver,
+                Settings.System.WEATHER_INVERT_LOWHIGH, 0) == 1;
 
         if (mWeatherPanel != null) {
-            if (mWeatherCity != null) {
-                mWeatherCity.setText(w.city);
-                mWeatherCity.setVisibility(showLocation ? View.VISIBLE : View.GONE);
-            }
-            if (mWeatherCondition != null) {
-                mWeatherCondition.setText(w.condition);
-            }
-            if (mUpdateTime != null) {
-                Date lastTime = new Date(mWeatherInfo.last_sync);
-                String date = DateFormat.getDateFormat(getContext()).format(lastTime);
-                String time = DateFormat.getTimeFormat(getContext()).format(lastTime);
-                mUpdateTime.setText(date + " " + time);
-                mUpdateTime.setVisibility(showTimestamp ? View.VISIBLE : View.GONE);
-            }
-            if (mWeatherTemp != null) {
-                mWeatherTemp.setText(w.temp);
-            }
-            if (mWeatherLowHigh != null) {
-                mWeatherLowHigh.setText(w.low + " | " + w.high);
-            }
-
             if (mWeatherImage != null) {
                 String conditionCode = w.condition_code;
                 String condition_filename = "weather_" + conditionCode;
@@ -411,6 +412,26 @@ class KeyguardStatusViewManager implements OnClickListener {
                     mWeatherImage.setImageResource(R.drawable.weather_na);
                 }
             }
+            if (mWeatherCity != null) {
+                mWeatherCity.setText(w.city);
+                mWeatherCity.setVisibility(showLocation ? View.VISIBLE : View.GONE);
+            }
+            if (mWeatherCondition != null) {
+                mWeatherCondition.setText(w.condition);
+                mWeatherCondition.setVisibility(View.VISIBLE);
+            }
+            if (mWeatherUpdateTime != null) {
+                Date lastTime = new Date(mWeatherInfo.last_sync);
+                String date = DateFormat.getDateFormat(getContext()).format(lastTime);
+                String time = DateFormat.getTimeFormat(getContext()).format(lastTime);
+                mWeatherUpdateTime.setText(date + " " + time);
+                mWeatherUpdateTime.setVisibility(showTimestamp ? View.VISIBLE : View.GONE);
+            }
+            if (mWeatherTempsPanel != null && mWeatherTemp != null && mWeatherLowHigh != null) {
+                mWeatherTemp.setText(w.temp);
+                mWeatherLowHigh.setText(invertLowhigh ? w.high + " | " + w.low : w.low + " | " + w.high);
+                mWeatherTempsPanel.setVisibility(View.VISIBLE);
+            }
 
             // Show the Weather panel view
             mWeatherPanel.setVisibility(View.VISIBLE);
@@ -422,29 +443,23 @@ class KeyguardStatusViewManager implements OnClickListener {
      * 'Tap to reload' message
      */
     private void setNoWeatherData() {
-        final ContentResolver resolver = getContext().getContentResolver();
-        boolean useMetric = Settings.System.getInt(resolver,
-                Settings.System.WEATHER_USE_METRIC, 1) == 1;
 
         if (mWeatherPanel != null) {
+            if (mWeatherImage != null) {
+                mWeatherImage.setImageResource(R.drawable.weather_na);
+            }
             if (mWeatherCity != null) {
-                mWeatherCity.setText("CM Weather");  //Hard coding this on purpose
+                mWeatherCity.setText(R.string.weather_no_data);
                 mWeatherCity.setVisibility(View.VISIBLE);
             }
             if (mWeatherCondition != null) {
                 mWeatherCondition.setText(R.string.weather_tap_to_refresh);
             }
-            if (mUpdateTime != null) {
-                mUpdateTime.setVisibility(View.GONE);
+            if (mWeatherUpdateTime != null) {
+                mWeatherUpdateTime.setVisibility(View.GONE);
             }
-            if (mWeatherTemp != null) {
-                mWeatherTemp.setText(useMetric ? "0°c" : "0°f");
-            }
-            if (mWeatherLowHigh != null) {
-                mWeatherLowHigh.setText("0° | 0°");
-            }
-            if (mWeatherImage != null) {
-                mWeatherImage.setImageResource(R.drawable.weather_na_cid);
+            if (mWeatherTempsPanel != null ) {
+                mWeatherTempsPanel.setVisibility(View.GONE);
             }
 
             // Show the Weather panel view
@@ -490,6 +505,58 @@ class KeyguardStatusViewManager implements OnClickListener {
             e.printStackTrace();
         }
         return null;
+    }
+
+    /*
+     * CyanogenMod Lock screen Calendar related functionality
+     */
+
+    private void refreshCalendar() {
+        if (mCalendarPanel != null) {
+            final ContentResolver resolver = getContext().getContentResolver();
+            String[] nextCalendar = null;
+            boolean visible = false; // Assume we are not showing the view
+
+            // Load the settings
+            boolean lockCalendar = (Settings.System.getInt(resolver,
+                    Settings.System.LOCKSCREEN_CALENDAR, 0) == 1);
+            String[] calendars = parseStoredValue(Settings.System.getString(
+                    resolver, Settings.System.LOCKSCREEN_CALENDARS));
+            boolean lockCalendarRemindersOnly = (Settings.System.getInt(resolver,
+                    Settings.System.LOCKSCREEN_CALENDAR_REMINDERS_ONLY, 0) == 1);
+            long lockCalendarLookahead = Settings.System.getLong(resolver,
+                    Settings.System.LOCKSCREEN_CALENDAR_LOOKAHEAD, 10800000);
+
+            if (lockCalendar) {
+                nextCalendar = mLockPatternUtils.getNextCalendarAlarm(lockCalendarLookahead,
+                        calendars, lockCalendarRemindersOnly);
+                if (nextCalendar[0] != null && mCalendarEventTitle != null) {
+                    mCalendarEventTitle.setText(nextCalendar[0].toString());
+                    if (nextCalendar[1] != null && mCalendarEventDetails != null) {
+                        mCalendarEventDetails.setText(nextCalendar[1]);
+                    }
+                    visible = true;
+                }
+            }
+
+           mCalendarPanel.setVisibility(visible ? View.VISIBLE : View.GONE);
+        }
+    }
+
+    /**
+     * Split the MultiSelectListPreference string based on a separator of ',' and
+     * stripping off the start [ and the end ]
+     * @param val
+     * @return
+     */
+    private static String[] parseStoredValue(String val) {
+        if (val == null || val.isEmpty())
+            return null;
+        else {
+            // Strip off the start [ and the end ] before splitting
+            val = val.substring(1, val.length() -1);
+            return (val.split(","));
+        }
     }
 
     private boolean inWidgetMode() {
@@ -944,6 +1011,12 @@ class KeyguardStatusViewManager implements OnClickListener {
         if (v == mEmergencyCallButton) {
             mCallback.takeEmergencyCallAction();
         } else if (v == mWeatherPanel) {
+            // Indicate we are refreshing
+            if (mWeatherCondition != null) {
+                mWeatherCondition.setText(R.string.weather_refreshing);
+            }
+
+            mCallback.pokeWakelock();
             if (!mHandler.hasMessages(QUERY_WEATHER)) {
                 mHandler.sendEmptyMessage(QUERY_WEATHER);
             }

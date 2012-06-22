@@ -3441,7 +3441,7 @@
     <!-- STK setup Call -->
     <string name="SetupCallDefault">Accept Call?</string>
 
-    <!--Application killed toast -->
+    <!-- Long-press back kill application -->
     <string name="app_killed_message">Application killed</string>
 
     <!-- Lock screen Weather - Weather codes -->
@@ -3507,6 +3507,8 @@
     <string name="weather_NW">NW</string>
 
     <!-- Lock screen Weather - error messages -->
+    <string name="weather_no_data">No data</string>
     <string name="weather_tap_to_refresh">Tap to refresh</string>
+    <string name="weather_refreshing">Refreshing</string>
 
 </resources>
