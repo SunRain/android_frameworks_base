@@ -394,7 +394,7 @@ framework_docs_LOCAL_JAVA_LIBRARIES := \
 			ext \
 			framework \
 			mms-common \
-			telephony-common \
+			telephony-common
 
 framework_docs_LOCAL_MODULE_CLASS := JAVA_LIBRARIES
 framework_docs_LOCAL_DROIDDOC_HTML_DIR := docs/html
