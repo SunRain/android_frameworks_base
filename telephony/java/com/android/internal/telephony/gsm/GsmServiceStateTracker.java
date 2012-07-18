@@ -865,6 +865,7 @@ final class GsmServiceStateTracker extends ServiceStateTracker {
             } else {
                 String iso = "";
                 String mcc = operatorNumeric.substring(0, 3);
+                log(" my add debug : operatorNumeric is : "+operatorNumeric);
                 try{
                     iso = MccTable.countryCodeForMcc(Integer.parseInt(mcc));
                 } catch ( NumberFormatException ex){
