@@ -3931,4 +3931,56 @@
   <!-- HW rotation lock -->
   <java-symbol type="string" name="toast_rotation_unlocked" />
   <java-symbol type="string" name="toast_rotation_locked" />
+
+ <!-- Calendar -->
+  <java-symbol type="id" name="calendar" />
+  <java-symbol type="id" name="event_title" />
+  <java-symbol type="id" name="event_details" />
+  <java-symbol type="layout" name="calendar_entry" />
+  <java-symbol type="string" name="lockscreen_calendar_tomorrow" />
+
+ <!-- Always show battery status on lockscreen -->
+  <java-symbol type="string" name="lockscreen_always_battery" />
+  <java-symbol type="string" name="lockscreen_always_low_battery" />
+
+ <!-- Weather -->
+  <public type="string" name="weatherpanel_slash" />
+  <public type="drawable" name="weather_condition" />
+
+  <!-- Hide Navbar -->
+  <java-symbol type="layout" name="global_actions_navbar_mode" />
+  <java-symbol type="id" name="navbartoggle" />
+  <java-symbol type="id" name="navbarhome" />
+  <java-symbol type="id" name="navbarback" />
+  <java-symbol type="id" name="navbarmenu" />
+
+  <!-- Power Menu -->
+  <java-symbol type="drawable" name="ic_lock_screenshot" />
+  <java-symbol type="string" name="global_action_screenshot" />
+
+  <!-- Lockscreen Music Layout -->
+  <java-symbol type="id" name="album_aokp" />
+  <java-symbol type="id" name="albumart_aokp" />
+  <java-symbol type="id" name="albumart_stock" />
+  <java-symbol type="id" name="artist_aokp" />
+  <java-symbol type="id" name="btn_next_aokp" />
+  <java-symbol type="id" name="btn_next_stock" />
+  <java-symbol type="id" name="btn_play_aokp" />
+  <java-symbol type="id" name="btn_play_stock" />
+  <java-symbol type="id" name="btn_prev_aokp" />
+  <java-symbol type="id" name="btn_prev_stock" />
+  <java-symbol type="id" name="layout_aokp" />
+  <java-symbol type="id" name="layout_stock" />
+  <java-symbol type="id" name="title_aokp" />
+  <java-symbol type="id" name="title_stock" />
+
+  <!-- Custom Vibrations -->
+  <java-symbol type="string" name="vibration_picker_title"/>
+  <java-symbol type="string" name="vibration_picker_del_title"/>
+  <java-symbol type="layout" name="vibration_picker_dialog"/>
+
+ <!-- Tablets and docks -->
+  <java-symbol type="bool" name="config_hasRemovableLid" />
+  <java-symbol type="bool" name="config_hasDockBattery" />
+
 </resources>
