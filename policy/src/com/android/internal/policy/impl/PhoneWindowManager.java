@@ -1080,6 +1080,21 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             if (statusbar != null) {
                 statusbar.cancelPreloadRecentApps();
                 mRecentAppsPreloaded = false;
+
+        /*if (mLongPressOnHomeBehavior == LONG_PRESS_HOME_RECENT_DIALOG) {
+            showOrHideRecentAppsDialog(RECENT_APPS_BEHAVIOR_SHOW_OR_DISMISS);
+        } else if (mLongPressOnHomeBehavior == LONG_PRESS_HOME_RECENT_SYSTEM_UI) {
+            try {
+                IStatusBarService statusbar = getStatusBarService();
+                if (statusbar != null) {
+                    // TODO: Make this an option, for testing only right now
+                    //statusbar.toggleNotificationShade();
+                    statusbar.toggleRecentApps();
+                }
+            } catch (RemoteException e) {
+                Slog.e(TAG, "RemoteException when showing recent apps", e);
+                // re-acquire status bar service next time it is needed.
+                mStatusBarService = null;*/
             }
         } catch (RemoteException e) {
             Slog.e(TAG, "RemoteException when showing recent apps", e);

@@ -143,19 +143,19 @@ public class ExtensibleKeyButtonView extends KeyButtonView {
         		return;
         		
         	} else if (mClickAction.equals(ACTION_RECENTS)) {
-        		try {
-                    mBarService.toggleRecentApps();
-                } catch (RemoteException e) {            	
-                }
-                return;
+        	    try {
+                        mBarService.toggleRecentApps();
+                    } catch (RemoteException e) {
+                    }
+                    return;
 
-            } else if (mClickAction.equals(ACTION_NOTIFICATIONS)) {
-                try {
-                    mBarService.toggleNotificationShade();
-                } catch (RemoteException e) {
+                } else if (mClickAction.equals(ACTION_NOTIFICATIONS)) {
+                   try {
+                       mBarService.toggleNotificationShade();
+                    } catch (RemoteException e) {
                     // A RemoteException is like a cold
                     // Let's hope we don't catch one!
-                }
+                    }
                 return;
 
                 } else if (mClickAction.equals(ACTION_IME)) {
@@ -234,6 +234,14 @@ public class ExtensibleKeyButtonView extends KeyButtonView {
                     mBarService.toggleRecentApps();
                 } catch (RemoteException e) {   
                 	// let it go.
+                }
+                return true;
+            } else if (mClickAction.equals(ACTION_NOTIFICATIONS)) {
+                try {
+                    mBarService.toggleNotificationShade();
+                } catch (RemoteException e) {
+                    // A RemoteException is like a cold
+                    // Let's hope we don't catch one!
                 }
                 return true;
         	} else {  // we must have a custom uri
