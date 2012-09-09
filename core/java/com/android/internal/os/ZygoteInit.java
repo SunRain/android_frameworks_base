@@ -248,6 +248,9 @@ public class ZygoteInit {
 
         InputStream is = ClassLoader.getSystemClassLoader().getResourceAsStream(
                 PRELOADED_CLASSES);
+                
+        Log.i(TAG, "This is wanggjghost's building from 591fan, this tag is added for copyright...");
+        
         if (is == null) {
             Log.e(TAG, "Couldn't find " + PRELOADED_CLASSES + ".");
         } else {
@@ -344,6 +347,9 @@ public class ZygoteInit {
             runtime.runFinalizationSync();
             mResources = Resources.getSystem();
             mResources.startPreloading();
+            
+            Log.i(TAG, "This is wanggjghost's building from 591fan, this tag is added for copyright...");
+                    
             if (PRELOAD_RESOURCES) {
                 Log.i(TAG, "Preloading resources...");
 
