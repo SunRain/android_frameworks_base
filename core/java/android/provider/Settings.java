@@ -2357,11 +2357,25 @@ public final class Settings {
         public static final String EXPANDED_HIDE_SCROLLBAR = "expanded_hide_scrollbar";
 
         /**
+         * Hide indicator in status bar widget
+         *
+         * @hide
+         */
+        public static final String EXPANDED_HIDE_INDICATOR = "expanded_hide_indicator";
+
+        /**
          * Haptic feedback in power widget
          *
          * @hide
          */
         public static final String EXPANDED_HAPTIC_FEEDBACK = "expanded_haptic_feedback";
+
+        /**
+         * Notification Indicator Color
+         *
+         * @hide
+         */
+        public static final String EXPANDED_VIEW_WIDGET_COLOR = "expanded_widget_color";
 
         /**
          * Widget Buttons to Use
@@ -3112,6 +3126,500 @@ public final class Settings {
         @Deprecated
         public static final String WIFI_WATCHDOG_PING_TIMEOUT_MS =
             Secure.WIFI_WATCHDOG_PING_TIMEOUT_MS;
+
+         /**
+         * Whether the UI is initiated in tablet UI (false = phone UI)
+         * @hide
+         *  0 = Phone UI
+         *  1 = Tablet UI
+         *  2 = Phablet UI
+         */
+        public static final String TABLET_UI = "tablet_ui";
+
+         /**
+         * @hide
+         */
+        public static final String NAVIGATION_BAR_SHOW = "navigation_bar_show";
+
+         /**
+         * Navigation bar height in portrait
+         * @hide
+         */
+        public static final String NAVIGATION_BAR_HEIGHT = "navigation_bar_height";
+
+        /**
+         * Navigation bar height in landscape
+         * @hide
+         */
+        public static final String NAVIGATION_BAR_HEIGHT_LANDSCAPE = "navigation_bar_height_landscape";
+
+        /**
+         * Navigation bar height in landscape if the bar is along the side of the device
+         * @hide
+         */
+        public static final String NAVIGATION_BAR_WIDTH = "navigation_bar_width";
+
+         /**
+         * @hide
+         */
+        public static final String SYSTEMUI_NAVRING_1 = "systemui_navring_1";
+
+        /**
+         * @hide
+         */
+        public static final String SYSTEMUI_NAVRING_2 = "systemui_navring_2";
+
+        /**
+         * @hide
+         */
+        public static final String SYSTEMUI_NAVRING_3 = "systemui_navring_3";
+
+        /**
+         * @hide
+         */
+        public static final String SYSTEMUI_NAVRING_4 = "systemui_navring_4";
+
+        /**
+         * @hide
+         */
+        public static final String SYSTEMUI_NAVRING_5 = "systemui_navring_5";
+
+        /**
+         * @hide
+         */
+        public static final String SYSTEMUI_NAVRING_AMOUNT = "systemui_navring_amount";
+
+        /**
+         * @hide
+         */
+        public static final String SYSTEMUI_NAVRING_ASSIST = "assist";
+
+        /**
+         * hide
+         */
+        public static final String SYSTEMUI_SOFTKEY_REBOOT = "reboot";
+
+        /**
+         * hide
+         */
+        public static final String SYSTEMUI_SOFTKEY_SCREENSHOT = "screenshot";
+
+        /**
+         * hide
+         */
+        public static final String SYSTEMUI_SOFTKEY_SCREENOFF = "screenoff";
+
+        /**
+         * hide
+         */
+        public static final String SYSTEMUI_SOFTKEY_KILL_PROCESS = "killcurrent";
+
+        /**
+         * @hide
+         */
+        public static final String SYSTEMUI_NAVRING_OVERRIDE_HOME = "systemui_navring_override_home";
+
+        /**
+         * @hide
+         */
+        public static final int SYSTEMUI_NAVRING_OVERRIDE_HOME_DEF = 0;
+
+        /**
+         * @hide
+         */
+        public static final String STATUSBAR_TOGGLES_USE_BUTTONS = "statusbar_toggles_use_buttons";
+
+        /**
+         * @hide
+         */
+        public static final String STATUS_BAR_BRIGHTNESS_SLIDER = "statusbar_brightness_slider";
+
+        /**
+         * @hide
+         */
+        public static final String STATUSBAR_TOGGLES = "statusbar_toggles";
+
+        /**
+         * @hide
+         */
+        public static final String STATUSBAR_TOGGLES_STYLE = "statusbar_toggles_style";
+
+        /**
+         * @hide
+         */
+        public static final String STATUSBAR_TOGGLES_BRIGHTNESS_LOC = "statusbar_toggles_brightness_loc";
+
+        /**
+         * @hide
+         */
+        public static final String STATUSBAR_TOGGLES_NUMBER_PER_ROW = "statusbar_toggles_number_per_row";
+
+        /**
+         * @hide
+         */
+        public static final String STATUSBAR_TOGGLES_ENABLED_COLOR = "statusbar_toggles_enabled_color";
+
+        /**
+         * @hide
+         */
+        public static final String STATUSBAR_TOGGLES_DISABLED_COLOR = "statusbar_toggles_disabled_color";
+
+        /**
+         * @hide
+         */
+        public static final String STATUSBAR_TOGGLES_TEXT_COLOR = "statusbar_toggles_text_color";
+
+        /**
+         * @hide
+         */
+        public static final String STATUSBAR_TOGGLES_ALPHA = "statusbar_toggles_alpha";
+
+        /**
+         * @hide
+         */
+        public static final String STATUSBAR_TOGGLES_BACKGROUND = "statusbar_toggles_background";
+
+        /**
+         * @hide
+         */
+        public static final String STATUS_BAR_LAYOUT = "statusbar_layout";
+
+        /**
+         * Show the pending notification counts as overlays on the status bar
+         * @hide
+         */
+        public static final String STATUS_BAR_NOTIF_COUNT = "status_bar_notif_count";
+
+        /**
+         * @hide
+         * AM/PM Style for clock options
+         * 0 - Normal AM/PM
+         * 1 - Small AM/PM
+         * 2 - No AM/PM
+         * 3 - ProTekk 9999999999999999999
+         */
+        public static final String STATUSBAR_CLOCK_AM_PM_STYLE = "statusbar_clock_am_pm_style";
+
+        /**
+         * @hide
+         * Style of clock
+         * 0 - Hide Clock
+         * 1 - Right Clock
+         * 2 - Center Clock
+         */
+        public static final String STATUSBAR_CLOCK_STYLE = "statusbar_clock_style";
+
+        /**
+        * @hide
+        */
+        public static final String STATUSBAR_CLOCK_COLOR = "statusbar_clock_color";
+
+        /**
+         * @hide
+         * Shows weekday before clock time
+         * 0 - No Day
+         * 1 - Small Day
+         * 2 - Normal Day
+         */
+        public static final String STATUSBAR_CLOCK_WEEKDAY = "statusbar_clock_weekday";
+
+
+        /**
+         * @hide
+         * Style of Battery
+         * 0 - Icon Only
+         * 1 - Text Only
+         * 2 - Icon Text
+         * 3 - Icon Centered Text
+         * 4 - Icon Circle
+         * 5 - Hide
+         */
+        public static final String STATUSBAR_BATTERY_ICON = "statusbar_battery_icon";
+
+        /**
+         * @hide
+         * Shows the battery icon in the notification pull down
+         */
+        public static final String NOTIFICATION_BATTERY_DISPLAY = "notification_battery_display";
+
+        /**
+         * Whether to show the battery bar
+         * 
+         * @hide
+         */
+        public static final String STATUSBAR_BATTERY_BAR = "statusbar_battery_bar";
+
+        /**
+         * @hide
+         */
+        public static final String STATUSBAR_BATTERY_BAR_COLOR = "statusbar_battery_bar_color";
+
+        /**
+         * thickness of the batteyr bar (in dp)
+         * 
+         * @hide
+         */
+        public static final String STATUSBAR_BATTERY_BAR_THICKNESS = "statusbar_battery_bar_thickness";
+
+        /**
+         * 0 = regular
+         * 1 = mirrored from center
+         * 
+         * @hide
+         */
+        public static final String STATUSBAR_BATTERY_BAR_STYLE = "statusbar_battery_bar_style";
+
+        /**
+         * whether to show charging animation
+         * 
+         * @hide
+         */
+        public static final String STATUSBAR_BATTERY_BAR_ANIMATE = "statusbar_battery_bar_animate";
+
+        /**
+         * Sets the alpha (transparency) of notification wallpaper
+         * @hide
+         */
+        public static final String NOTIF_WALLPAPER_ALPHA = "notif_wallpaper_alpha";
+
+	/**
+         * Whether to enable quiet hours.
+         * @hide
+         */
+        public static final String QUIET_HOURS_ENABLED = "quiet_hours_enabled";
+
+        /**
+         * Sets when quiet hours starts. This is stored in minutes from the start of the day.
+         * @hide
+         */
+        public static final String QUIET_HOURS_START = "quiet_hours_start";
+
+        /**
+         * Sets when quiet hours end. This is stored in minutes from the start of the day.
+         * @hide
+         */
+        public static final String QUIET_HOURS_END = "quiet_hours_end";
+
+        /**
+         * Whether to remove the sound from outgoing notifications during quiet hours.
+         * @hide
+         */
+        public static final String QUIET_HOURS_NOTIFICATIONS = "quiet_hours_notifications";
+
+        /**
+         * Whether to mute phone ringtones during quiet hours.
+         * @hide
+         */
+        public static final String QUIET_HOURS_RINGER = "quiet_hours_ringer";
+
+        /**
+         * Whether to disable vibrations during quiet hours.
+         * @hide
+         */
+        public static final String QUIET_HOURS_STILL = "quiet_hours_still";
+
+        /**
+         * Whether to attempt to dim the LED color during quiet hours.
+         * @hide
+         */
+        public static final String QUIET_HOURS_DIM = "quiet_hours_dim";
+        
+        /**
+         * where to show the legacy menu key
+         * 0 = right (default)
+         * 1 = left
+         * 2 = both
+         * 
+         * @hide
+         */
+        public static final String MENU_LOCATION = "menu_location";
+
+        /**
+         * Menu visibility style
+         * 
+         * @hide
+         */
+        public static final String MENU_VISIBILITY = "menu_visibility";
+        
+        /**
+         * Number of custom navbar buttons
+         *
+         * @hide
+         */
+        public static final String NAVIGATION_BAR_BUTTONS_QTY = "navigation_bar_buttons_qty";
+        
+        /**
+         * Custom navigation bar intents (short press)
+         * 
+         * @hide
+         */
+        public static final String[] NAVIGATION_CUSTOM_ACTIVITIES = new String[] {
+                "navigation_custom_app_intent_0",
+                "navigation_custom_app_intent_1",
+                "navigation_custom_app_intent_2",
+                "navigation_custom_app_intent_3",
+                "navigation_custom_app_intent_4",
+        };
+        
+        /**
+         * Custom navigation bar intents (long press)
+         * 
+         * @hide
+         */
+        public static final String[] NAVIGATION_LONGPRESS_ACTIVITIES = new String[] {
+                "navigation_longpress_app_intent_0",
+                "navigation_longpress_app_intent_1",
+                "navigation_longpress_app_intent_2",
+                "navigation_longpress_app_intent_3",
+                "navigation_longpress_app_intent_4",
+        };
+        
+        /**
+         * Drawable URIs, each index needs to be matched up to NAVIGATION_CUSTOM_ACTIVITIES
+         *
+         * OR ELSE
+         *
+         * @hide
+         */
+        public static final String[] NAVIGATION_CUSTOM_APP_ICONS = new String[] {
+                "navigation_custom_app_icon_0",
+                "navigation_custom_app_icon_1",
+                "navigation_custom_app_icon_2",
+                "navigation_custom_app_icon_3",
+                "navigation_custom_app_icon_4",
+        };
+
+        /**
+         * @hide
+         */
+        public static final String NAVIGATION_BAR_TINT = "navigation_bar_tint";
+
+        /**
+         * @hide
+         */
+        public static final String NAVIGATION_BAR_GLOW_TINT = "navigation_bar_glow_tint";
+
+        /**
+         * [0] = how long to animate glow off
+         * [1] = how long to animate glow on
+         *
+         * @hide
+         */
+        public static final String[] NAVIGATION_BAR_GLOW_DURATION = new String[] {
+            "navigation_bar_glow_duration_off",
+            "navigation_bar_glow_duration_on"
+        };
+
+        /**
+         * How long to keep the notification LED on (in milliseconds)
+         * 
+         * @hide
+         */
+        public static final String NOTIFICATION_LIGHT_ON = "notification_light_on";
+
+        /**
+         * How long to keep the notification LED off (in milliseconds)
+         * 
+         * @hide
+         */
+        public static final String NOTIFICATION_LIGHT_OFF = "notification_light_off";
+
+        /**
+         * What color to use for the notificaion LED
+         *
+         * @hide
+         */
+        public static final String NOTIFICATION_LIGHT_COLOR = "notification_light_color";
+
+        /**
+	 *
+	 * @hide
+	 */
+        public static final String NAVIGATION_BAR_BUTTON_ALPHA = "navigation_bar_button_alpha";
+
+        /**
+         * @hide
+         */
+        public static final String LOCKSCREEN_WEATHER = "lockscreen_weather";
+
+        /**
+         * @hide
+         */
+        public static final String LOCKSCREEN_WEATHER_TYPE = "lockscreen_weather_type";
+
+        /**
+         * @hide
+         */
+        public static final String USE_WEATHER = "use_weather";
+
+        /**
+         * @hide
+         */
+        public static final String WEATHER_SHOW_LOCATION = "weather_show_location";
+
+        /**
+         * How long to wait between playing notification sounds from a package
+         * Should be in milliseconds. 0 to disable
+         * @hide
+         */
+        public static final String MUTE_ANNOYING_NOTIFICATIONS_THRESHOLD = "mute_annoying_notifications_threshold";
+
+        /**
+         * Holds the text for the Carrier Label. An empty string will bring
+         * the default text back.
+         * @hide
+         */
+        public static final String CUSTOM_CARRIER_LABEL = "custom_carrier_label";
+
+        /**
+         * whether to hide the kill-all-button on recent switcher
+         *
+         * @hide
+         */
+        public static final String RECENT_KILL_ALL_BUTTON = "recent_kill_all_button";
+
+        /**
+         * Whether to show statusbar signal text
+         *
+         * @hide
+         */
+        public static final String STATUSBAR_SIGNAL_TEXT = "statusbar_signal_text";
+
+        /**
+         * statusbar signal text color
+         *
+         * @hide
+         */
+        public static final String STATUSBAR_SIGNAL_TEXT_COLOR = "statusbar_signal_text_color";
+
+        /**
+         * whether to hide the signal barss
+         *
+         * @hide
+         */
+        public static final String STATUSBAR_HIDE_SIGNAL_BARS = "statusbar_hide_signal_bars";
+
+        /**
+         * Whether to show statusbar WiFi signal text
+         *
+         * @hide
+         */
+        public static final String STATUSBAR_WIFI_SIGNAL_TEXT = "statusbar_wifi_signal_text";
+
+        /**
+         * statusbar WIFI signal text color
+         *
+         * @hide
+         */
+        public static final String STATUSBAR_WIFI_SIGNAL_TEXT_COLOR = "statusbar_wifi_signal_text_color";
+
+        /**
+         * use Alt Statusbar Signal Layout
+         * boolean
+         *
+         * @hide
+         */
+        public static final String STATUSBAR_SIGNAL_CLUSTER_ALT = "statusbar_signal_cluster_alt";
     }
 
     /**

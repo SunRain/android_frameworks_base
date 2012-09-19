@@ -133,7 +133,6 @@
     <protected-broadcast android:name="android.intent.action.PROXY_CHANGE" />
 
     <protected-broadcast android:name="android.os.UpdateLock.UPDATE_LOCK_CHANGED" />
-    <protected-broadcast android:name="android.intent.action.NAVBAR_EDIT" />
 
     <!-- ====================================== -->
     <!-- Permissions for things that cost money -->
@@ -1685,6 +1684,10 @@
                 android:process=":ui">
         </activity>
         <activity android:name="com.android.internal.app.PlatLogoActivity"
+                android:theme="@style/Theme.Wallpaper.NoTitleBar.Fullscreen"
+                android:process=":ui">
+        </activity>
+        <activity android:name="com.android.internal.app.AOKPLogoActivity"
                 android:theme="@style/Theme.Wallpaper.NoTitleBar.Fullscreen"
                 android:process=":ui">
         </activity>

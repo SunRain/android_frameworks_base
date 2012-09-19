@@ -24,7 +24,6 @@ import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.StatusBarManager;
 import android.content.BroadcastReceiver;
-import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -80,7 +79,6 @@ import com.android.systemui.statusbar.SignalClusterView;
 import com.android.systemui.statusbar.StatusBarIconView;
 import com.android.systemui.statusbar.NotificationData.Entry;
 import com.android.systemui.statusbar.policy.BatteryController;
-import com.android.systemui.statusbar.policy.DockBatteryController;
 import com.android.systemui.statusbar.policy.BluetoothController;
 import com.android.systemui.statusbar.policy.CompatModeButton;
 import com.android.systemui.statusbar.policy.LocationController;
@@ -164,14 +162,11 @@ public class TabletStatusBar extends BaseStatusBar implements
     int mNotificationPeekTapDuration;
     int mNotificationFlingVelocity;
 
-    BatteryController mBatteryController;
-    DockBatteryController mDockBatteryController;
+    //BatteryController mBatteryController;
     BluetoothController mBluetoothController;
     LocationController mLocationController;
     NetworkController mNetworkController;
     DoNotDisturb mDoNotDisturb;
-
-    private boolean mHasDockBattery;
 
     ViewGroup mBarContents;
 
@@ -192,9 +187,6 @@ public class TabletStatusBar extends BaseStatusBar implements
 
     private InputMethodsPanel mInputMethodsPanel;
     private CompatModePanel mCompatModePanel;
-
-    // clock
-    private boolean mShowClock;
 
     private int mSystemUiVisibility = 0;
 
@@ -293,17 +285,8 @@ public class TabletStatusBar extends BaseStatusBar implements
                 new TouchOutsideListener(MSG_CLOSE_NOTIFICATION_PANEL, mNotificationPanel));
 
         // the battery icon
-        mBatteryController.addIconView((ImageView)mNotificationPanel.findViewById(R.id.battery));
-        mBatteryController.addLabelView(
-                (TextView)mNotificationPanel.findViewById(R.id.battery_text));
-
-        if (mHasDockBattery) {
-            mDockBatteryController.addIconView((ImageView)mNotificationPanel.findViewById(R.id.dock_battery));
-            mDockBatteryController.addLabelView(
-                    (TextView)mNotificationPanel.findViewById(R.id.dock_battery_text));
-        } else {
-            mNotificationPanel.findViewById(R.id.dock_battery_text).setVisibility(View.GONE);
-        }
+        //mBatteryController.addIconView((ImageView)mNotificationPanel.findViewById(R.id.battery));
+        //mBatteryController.addLabelView((TextView)mNotificationPanel.findViewById(R.id.battery_text));
 
         // Bt
         mBluetoothController.addIconView(
@@ -593,20 +576,8 @@ public class TabletStatusBar extends BaseStatusBar implements
         // watch the PREF_DO_NOT_DISTURB and convert to appropriate disable() calls
         mDoNotDisturb = new DoNotDisturb(mContext);
 
-        mBatteryController = new BatteryController(mContext);
-        mBatteryController.addIconView((ImageView)sb.findViewById(R.id.battery));
-        mBatteryController.addLabelView((TextView)sb.findViewById(R.id.battery_text));
-
-        mHasDockBattery = mContext.getResources().getBoolean(
-                com.android.internal.R.bool.config_hasDockBattery);
-
-        if (mHasDockBattery) {
-            mDockBatteryController = new DockBatteryController(mContext);
-            mDockBatteryController.addIconView((ImageView)sb.findViewById(R.id.dock_battery));
-            mDockBatteryController.addLabelView(
-                    (TextView)sb.findViewById(R.id.dock_battery_text));
-        }
-
+        //mBatteryController = new BatteryController(mContext);
+        //mBatteryController.addIconView((ImageView)sb.findViewById(R.id.battery));
         mBluetoothController = new BluetoothController(mContext);
         mBluetoothController.addIconView((ImageView)sb.findViewById(R.id.bluetooth));
 
@@ -1001,13 +972,10 @@ public class TabletStatusBar extends BaseStatusBar implements
     }
 
     public void showClock(boolean show) {
-        ContentResolver resolver = mContext.getContentResolver();
         View clock = mBarContents.findViewById(R.id.clock);
         View network_text = mBarContents.findViewById(R.id.network_text);
-        mShowClock = (Settings.System.getInt(resolver,
-                Settings.System.STATUS_BAR_CLOCK, 1) == 1);
         if (clock != null) {
-            clock.setVisibility(show ? (mShowClock ? View.VISIBLE : View.GONE) : View.GONE);
+            clock.setVisibility(show ? View.VISIBLE : View.GONE);
         }
         if (network_text != null) {
             network_text.setVisibility((!show) ? View.VISIBLE : View.GONE);

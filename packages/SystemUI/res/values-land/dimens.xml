@@ -37,5 +37,4 @@
     <!-- Where to place the app icon over the thumbnail -->
     <dimen name="status_bar_recents_app_icon_left_margin">8dp</dimen>
     <dimen name="status_bar_recents_app_icon_top_margin">8dp</dimen>
-
 </resources>

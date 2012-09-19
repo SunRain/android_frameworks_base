@@ -945,6 +945,8 @@
   <java-symbol type="drawable" name="sym_app_on_sd_unavailable_icon" />
   <java-symbol type="drawable" name="text_edit_side_paste_window" />
   <java-symbol type="drawable" name="text_edit_paste_window" />
+  <java-symbol type="drawable" name="aokplogo" />
+  <java-symbol type="drawable" name="aokplogo_alt" />
   <java-symbol type="drawable" name="btn_check_off" />
   <java-symbol type="drawable" name="btn_code_lock_default_holo" />
   <java-symbol type="drawable" name="btn_code_lock_touched_holo" />
@@ -3657,6 +3659,7 @@
   <public type="color" name="holo_orange_dark" id="0x01060019" />
   <public type="color" name="holo_purple" id="0x0106001a" />
   <public type="color" name="holo_blue_bright" id="0x0106001b" />
+  <public type="color" name="holo_white_light" id="0x0106001c" />
 
 <!-- ===============================================================
    Resources added in version 16 of the platform (Jelly Bean)
@@ -3846,14 +3849,6 @@
   <java-symbol type="id" name="calendar_panel" />
   <java-symbol type="id" name="calendar_event_title" />
   <java-symbol type="id" name="calendar_event_details" />
-
-  <!-- Power widget -->
-  <java-symbol type="string" name="hour" />
-  <java-symbol type="string" name="hours" />
-  <java-symbol type="string" name="minute" />
-  <java-symbol type="string" name="minutes" />
-  <java-symbol type="string" name="second" />
-  <java-symbol type="string" name="seconds" />
 
   <!-- Lock screen always show battery -->
   <java-symbol type="string" name="lockscreen_discharging" />
