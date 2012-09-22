@@ -1430,4 +1430,11 @@
     <string name="weather_tap_to_refresh">请点击刷新</string>
     <string name="weather_refreshing">正在刷新</string>
     <string name="weather_last_sync_just_now">刚刚刷新</string>
+    
+    <!-- Lockscreen calendar string -->
+    <string name="lockscreen_calendar_tomorrow">明天</string>
+
+    <!-- Vibration picker dialog title -->
+    <string name="vibration_picker_title">选择振动效果</string>
+    <string name="vibration_picker_del_title">删除振动效果</string>
 </resources>

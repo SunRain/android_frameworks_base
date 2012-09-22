@@ -147,4 +147,27 @@
     <string name="accessibility_rotation_lock_off" msgid="4062780228931590069">"屏幕会自动旋转。"</string>
     <string name="accessibility_rotation_lock_on_landscape" msgid="6731197337665366273">"屏幕锁定为横向模式。"</string>
     <string name="accessibility_rotation_lock_on_portrait" msgid="5809367521644012115">"屏幕锁定为纵向模式。"</string>
+    <string name="toggle_bt">蓝牙</string>
+    <string name="toggle_data">数据</string>
+    <string name="toggle_lte">LTE</string>
+    <string name="toggle_rotate">旋转</string>
+    <string name="toggle_wifi">WiFi</string>
+    <string name="toggle_gps">GPS</string>
+    <string name="toggle_2g">2G</string>
+    <string name="toggle_wifiap">热点</string>
+    <string name="toggle_airplane">飞行</string>
+    <string name="toggle_vibrate">振动</string>
+    <string name="toggle_silent">静音</string>
+    <string name="toggle_torch">灯光</string>
+    <string name="toggle_sync">同步</string>
+    <string name="toggle_swagger">自爆</string>
+    <string name="toggle_fcharge">快充</string>
+    <string name="toggle_tether">共享</string>
+    <string name="toggle_nfc">NFC</string>
+    <string name="status_bar_settings_toggles">开关</string>
+
+    <!-- Label in drop down to identify brightness slider -->
+    <string name="brightness_label">亮度</string>
+    <string name="recents_kill_all_button_text">全部结束</string>
+    <string name="app_killed_message">应用程序已结束</string> 
 </resources>
