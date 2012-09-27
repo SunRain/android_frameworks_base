@@ -40,6 +40,7 @@ import android.os.IBinder;
 import android.os.Message;
 import android.os.RemoteException;
 import android.os.ServiceManager;
+import android.os.SystemProperties;
 import android.os.storage.StorageManager;
 import android.provider.Settings;
 import android.os.SystemProperties;
