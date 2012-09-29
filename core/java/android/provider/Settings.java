@@ -2554,6 +2554,18 @@ public final class Settings {
         public static final String MVNO_ROAMING = "mvno_roaming";
 
         /**
+         * Whether to remove the sound from outgoing notifications during quiet hours.
+         * @hide
+         */
+        public static final String QUIET_HOURS_MUTE = "quiet_hours_mute";
+
+        /**
+         * Whether to disable haptic feedback during quiet hours.
+         * @hide
+         */
+        public static final String QUIET_HOURS_HAPTIC = "quiet_hours_haptic";
+        
+        /**
          * Whether to enable quiet hours.
          * @hide
          */
@@ -2575,13 +2587,13 @@ public final class Settings {
          * Whether to remove the sound from outgoing notifications during quiet hours.
          * @hide
          */
-        public static final String QUIET_HOURS_MUTE = "quiet_hours_mute";
+        public static final String QUIET_HOURS_NOTIFICATIONS = "quiet_hours_notifications";
 
         /**
-         * Whether to disable haptic feedback during quiet hours.
+         * Whether to mute phone ringtones during quiet hours.
          * @hide
          */
-        public static final String QUIET_HOURS_HAPTIC = "quiet_hours_haptic";
+        public static final String QUIET_HOURS_RINGER = "quiet_hours_ringer";
 
         /**
          * Whether to remove the vibration from outgoing notifications during quiet hours.
@@ -2696,12 +2708,6 @@ public final class Settings {
          * @hide
          */
         public static final String LOCKSCREEN_CLOCK_ALIGN = "lockscreen_clock_align";
-
-        /**
-         * Show the pending notification counts as overlays on the status bar
-         * @hide
-         */
-        public static final String STATUS_BAR_NOTIF_COUNT = "status_bar_notif_count";
 
         /**
          * Whether System profiles are enabled
@@ -3401,48 +3407,6 @@ public final class Settings {
          * @hide
          */
         public static final String NOTIF_WALLPAPER_ALPHA = "notif_wallpaper_alpha";
-
-	/**
-         * Whether to enable quiet hours.
-         * @hide
-         */
-        public static final String QUIET_HOURS_ENABLED = "quiet_hours_enabled";
-
-        /**
-         * Sets when quiet hours starts. This is stored in minutes from the start of the day.
-         * @hide
-         */
-        public static final String QUIET_HOURS_START = "quiet_hours_start";
-
-        /**
-         * Sets when quiet hours end. This is stored in minutes from the start of the day.
-         * @hide
-         */
-        public static final String QUIET_HOURS_END = "quiet_hours_end";
-
-        /**
-         * Whether to remove the sound from outgoing notifications during quiet hours.
-         * @hide
-         */
-        public static final String QUIET_HOURS_NOTIFICATIONS = "quiet_hours_notifications";
-
-        /**
-         * Whether to mute phone ringtones during quiet hours.
-         * @hide
-         */
-        public static final String QUIET_HOURS_RINGER = "quiet_hours_ringer";
-
-        /**
-         * Whether to disable vibrations during quiet hours.
-         * @hide
-         */
-        public static final String QUIET_HOURS_STILL = "quiet_hours_still";
-
-        /**
-         * Whether to attempt to dim the LED color during quiet hours.
-         * @hide
-         */
-        public static final String QUIET_HOURS_DIM = "quiet_hours_dim";
         
         /**
          * where to show the legacy menu key
@@ -3560,22 +3524,12 @@ public final class Settings {
         /**
          * @hide
          */
-        public static final String LOCKSCREEN_WEATHER = "lockscreen_weather";
-
-        /**
-         * @hide
-         */
         public static final String LOCKSCREEN_WEATHER_TYPE = "lockscreen_weather_type";
 
         /**
          * @hide
          */
         public static final String USE_WEATHER = "use_weather";
-
-        /**
-         * @hide
-         */
-        public static final String WEATHER_SHOW_LOCATION = "weather_show_location";
 
         /**
          * How long to wait between playing notification sounds from a package
