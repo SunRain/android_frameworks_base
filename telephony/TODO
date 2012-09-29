@@ -1,0 +1,14 @@
+ CdmaSmsCbProgramData.mLanguage should be int or String?
+ frameworks/opt/telephony/src/BearerData is int atm
+ need to comapre to aosp/cm changes later
+ 
+ ==============================
+
+ revert
+ frameworks/base/telephony/java/com/android/internal/telephony/cat/CallControlResult.java
+ 
+ https://github.com/CyanogenMod/android_frameworks_base/commits/jellybean/telephony/java/com/android/internal/telephony/cat/CallControlResult.java
+ 
+ should be added/ported later
+ 
+ 
