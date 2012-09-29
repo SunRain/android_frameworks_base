@@ -19,6 +19,7 @@ package com.android.internal.policy.impl;
 
 import com.android.internal.R;
 import com.android.internal.telephony.IccCardConstants;
+import com.android.internal.telephony.IccCardConstants.State;
 import com.android.internal.widget.DigitalClock;
 import com.android.internal.widget.LockPatternUtils;
 import com.android.internal.widget.TransportControlView;
@@ -58,7 +59,6 @@ import android.widget.TextView;
 
 import com.android.internal.R;
 import com.android.internal.policy.impl.KeyguardUpdateMonitor.SimStateCallback;
-import com.android.internal.telephony.IccCardConstants;
 import com.android.internal.util.weather.HttpRetriever;
 import com.android.internal.util.weather.WeatherInfo;
 import com.android.internal.util.weather.WeatherXmlParser;

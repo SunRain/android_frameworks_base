@@ -1,5 +1,6 @@
 /*
- * Copyright (C) 2008 The Android Open Source Project
+ * Copyright (C) 2011 The Android Open Source Project
+ * Copyright (C) 2012 The CyanogenMod Project (Weather, Calendar)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,817 +18,1143 @@
 package com.android.internal.policy.impl;
 
 import com.android.internal.R;
+import com.android.internal.telephony.IccCardConstants;
+import com.android.internal.widget.DigitalClock;
+import com.android.internal.widget.LockPatternUtils;
+import com.android.internal.widget.TransportControlView;
 import com.android.internal.policy.impl.KeyguardUpdateMonitor.InfoCallbackImpl;
 import com.android.internal.policy.impl.KeyguardUpdateMonitor.SimStateCallback;
-import com.android.internal.telephony.IccCardConstants;
-import com.android.internal.widget.LockPatternUtils;
-import com.android.internal.widget.SlidingTab;
-import com.android.internal.widget.WaveView;
-import com.android.internal.widget.multiwaveview.GlowPadView;
 
-import android.app.ActivityManager;
-import android.app.ActivityManagerNative;
-import android.app.SearchManager;
-import android.content.ActivityNotFoundException;
-import android.content.ComponentName;
+import java.util.ArrayList;
+import java.util.Date;
+
+import libcore.util.MutableInt;
+
+import android.content.ContentResolver;
 import android.content.Context;
-import android.content.Intent;
-import android.content.pm.ActivityInfo;
-import android.content.pm.PackageManager;
-import android.content.pm.PackageManager.NameNotFoundException;
-import android.content.res.Configuration;
 import android.content.res.Resources;
-import android.content.res.Resources.NotFoundException;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
-import android.graphics.drawable.InsetDrawable;
-import android.graphics.drawable.LayerDrawable;
-import android.graphics.drawable.StateListDrawable;
-import android.media.AudioManager;
-import android.os.RemoteException;
-import android.os.Vibrator;
-import android.provider.MediaStore;
+import android.content.res.Configuration;
+import android.location.Criteria;
+import android.location.Location;
+import android.location.LocationManager;
+import android.os.Handler;
+import android.os.Message;
 import android.provider.Settings;
+import android.text.TextUtils;
+import android.text.format.DateFormat;
+import android.text.format.DateUtils;
 import android.util.Log;
-import android.util.Slog;
-import android.view.KeyEvent;
-import android.view.LayoutInflater;
+import android.view.Gravity;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.ViewGroup;
-import android.view.ViewParent;
-import android.widget.*;
-import android.widget.ImageView.ScaleType;
+import android.view.ViewGroup.MarginLayoutParams;
+import android.provider.Settings;
+import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
 
 import com.android.internal.R;
-import com.android.internal.policy.impl.KeyguardUpdateMonitor.InfoCallbackImpl;
 import com.android.internal.policy.impl.KeyguardUpdateMonitor.SimStateCallback;
+import com.android.internal.util.weather.HttpRetriever;
+import com.android.internal.util.weather.WeatherInfo;
+import com.android.internal.util.weather.WeatherXmlParser;
+import com.android.internal.util.weather.YahooPlaceFinder;
 import com.android.internal.widget.LockPatternUtils;
-import com.android.internal.widget.SlidingTab;
-import com.android.internal.widget.WaveView;
-import com.android.internal.widget.multiwaveview.GlowPadView;
-import com.android.internal.widget.multiwaveview.TargetDrawable;
+import com.android.internal.widget.TransportControlView;
 
-import java.io.File;
-import java.net.URISyntaxException;
+import org.w3c.dom.Document;
+
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
 
-/**
- * The screen within {@link LockPatternKeyguardView} that shows general
- * information about the device depending on its state, and how to get
- * past it, as applicable.
+import libcore.util.MutableInt;
+
+/***
+ * Manages a number of views inside of LockScreen layouts. See below for a list of widgets
+ *
  */
-class LockScreen extends LinearLayout implements KeyguardScreen {
+class KeyguardStatusViewManager implements OnClickListener {
+    private static final boolean DEBUG = false;
+    private static final String TAG = "KeyguardStatusView";
 
-    private static final int ON_RESUME_PING_DELAY = 500; // delay first ping until the screen is on
-    private static final boolean DBG = false;
-    private static final String TAG = "LockScreen";
-    private static final String ENABLE_MENU_KEY_FILE = "/data/local/enable_menu_key";
-    private static final int WAIT_FOR_ANIMATION_TIMEOUT = 0;
-    private static final int STAY_ON_WHILE_GRABBED_TIMEOUT = 30000;
-    private static final String ASSIST_ICON_METADATA_NAME =
-            "com.android.systemui.action_assist_icon";
+    public static final int LOCK_ICON = 0; // R.drawable.ic_lock_idle_lock;
+    public static final int ALARM_ICON = R.drawable.ic_lock_idle_alarm;
+    public static final int CHARGING_ICON = 0; //R.drawable.ic_lock_idle_charging;
+    public static final int DISCHARGING_ICON = 0; // no icon used in ics+ currently
+    public static final int BATTERY_LOW_ICON = 0; //R.drawable.ic_lock_idle_low_battery;
+    private static final long INSTRUCTION_RESET_DELAY = 2000; // time until instruction text resets
+
+    private static final int INSTRUCTION_TEXT = 10;
+    private static final int CARRIER_TEXT = 11;
+    private static final int CARRIER_HELP_TEXT = 12;
+    private static final int HELP_MESSAGE_TEXT = 13;
+    private static final int OWNER_INFO = 14;
+    private static final int BATTERY_INFO = 15;
+
+    private StatusMode mStatus;
+    private String mDateFormatString;
+    private TransientTextManager mTransientTextManager;
+
+    // Views that this class controls.
+    // NOTE: These may be null in some LockScreen screens and should protect from NPE
+    private TextView mCarrierView;
+    private TextView mDateView;
+    private TextView mStatus1View;
+    private TextView mOwnerInfoView;
+    private TextView mAlarmStatusView;
+    private LinearLayout mDateLineView;
+    private TransportControlView mTransportView;
+    private RelativeLayout mWeatherPanel, mWeatherTempsPanel;
+    private TextView mWeatherCity, mWeatherCondition, mWeatherLowHigh, mWeatherTemp, mWeatherUpdateTime;
+    private ImageView mWeatherImage;
+    private LinearLayout mCalendarPanel;
+    private TextView mCalendarEventTitle, mCalendarEventDetails;
+
+    // Top-level container view for above views
+    private View mContainer;
+
+    // are we showing battery information?
+    private boolean mShowingBatteryInfo = false;
+
+    // last known plugged in state
+    private boolean mPluggedIn = false;
+
+    // last known battery level
+    private int mBatteryLevel = 100;
+
+    // always show battery status?
+    private boolean mAlwaysShowBattery = false;
+
+    // last known SIM state
+    protected IccCardConstants.State mSimState;
 
     private LockPatternUtils mLockPatternUtils;
     private KeyguardUpdateMonitor mUpdateMonitor;
+    private Button mEmergencyCallButton;
+    private boolean mEmergencyButtonEnabledBecauseSimLocked;
+
+    // Shadowed text values
+    private CharSequence mCarrierText;
+    private CharSequence mCarrierHelpText;
+    private String mHelpMessageText;
+    private String mInstructionText;
+    private CharSequence mOwnerInfoText;
+    private boolean mShowingStatus;
     private KeyguardScreenCallback mCallback;
+    private final boolean mEmergencyCallButtonEnabledInScreen;
+    private CharSequence mPlmn;
+    private CharSequence mSpn;
+    protected int mPhoneState;
+    private DigitalClock mDigitalClock;
 
-    // set to 'true' to show the ring/silence target when camera isn't available
-    private boolean mEnableRingSilenceFallback = false;
-
-    // current configuration state of keyboard and display
-    private int mCreationOrientation;
-
-    private boolean mSilentMode;
-    private AudioManager mAudioManager;
-    private boolean mEnableMenuKeyInLockScreen;
-
-    private KeyguardStatusViewManager mStatusViewManager;
-    private UnlockWidgetCommonMethods mUnlockWidgetMethods;
-    private View mUnlockWidget;
-    private boolean mCameraDisabled;
-    private boolean mSearchDisabled;
-    // Is there a vibrator
-    private final boolean mHasVibrator;
-
-    InfoCallbackImpl mInfoCallback = new InfoCallbackImpl() {
-
-        @Override
-        public void onRingerModeChanged(int state) {
-            boolean silent = AudioManager.RINGER_MODE_NORMAL != state;
-            if (silent != mSilentMode) {
-                mSilentMode = silent;
-                mUnlockWidgetMethods.updateResources();
+    private class TransientTextManager {
+        private TextView mTextView;
+        private class Data {
+            final int icon;
+            final CharSequence text;
+            Data(CharSequence t, int i) {
+                text = t;
+                icon = i;
             }
+        };
+        private ArrayList<Data> mMessages = new ArrayList<Data>(5);
+
+        TransientTextManager(TextView textView) {
+            mTextView = textView;
         }
 
-        @Override
-        public void onDevicePolicyManagerStateChanged() {
-            updateTargets();
-        }
-
-    };
-
-    SimStateCallback mSimStateCallback = new SimStateCallback() {
-        public void onSimStateChanged(IccCardConstants.State simState) {
-            updateTargets();
-        }
-    };
-
-    private interface UnlockWidgetCommonMethods {
-        // Update resources based on phone state
-        public void updateResources();
-
-        // Get the view associated with this widget
-        public View getView();
-
-        // Reset the view
-        public void reset(boolean animate);
-
-        // Animate the widget if it supports ping()
-        public void ping();
-
-        // Enable or disable a target. ResourceId is the id of the *drawable* associated with the
-        // target.
-        public void setEnabled(int resourceId, boolean enabled);
-
-        // Get the target position for the given resource. Returns -1 if not found.
-        public int getTargetPosition(int resourceId);
-
-        // Clean up when this widget is going away
-        public void cleanUp();
-    }
-
-    class SlidingTabMethods implements SlidingTab.OnTriggerListener, UnlockWidgetCommonMethods {
-        private final SlidingTab mSlidingTab;
-
-        SlidingTabMethods(SlidingTab slidingTab) {
-            mSlidingTab = slidingTab;
-        }
-
-        public void updateResources() {
-            boolean vibe = mSilentMode
-                && (mAudioManager.getRingerMode() == AudioManager.RINGER_MODE_VIBRATE);
-
-            mSlidingTab.setRightTabResources(
-                    mSilentMode ? ( vibe ? R.drawable.ic_jog_dial_vibrate_on
-                                         : R.drawable.ic_jog_dial_sound_off )
-                                : R.drawable.ic_jog_dial_sound_on,
-                    mSilentMode ? R.drawable.jog_tab_target_yellow
-                                : R.drawable.jog_tab_target_gray,
-                    mSilentMode ? R.drawable.jog_tab_bar_right_sound_on
-                                : R.drawable.jog_tab_bar_right_sound_off,
-                    mSilentMode ? R.drawable.jog_tab_right_sound_on
-                                : R.drawable.jog_tab_right_sound_off);
-        }
-
-        /** {@inheritDoc} */
-        public void onTrigger(View v, int whichHandle) {
-            if (whichHandle == SlidingTab.OnTriggerListener.LEFT_HANDLE) {
-                mCallback.goToUnlockScreen();
-            } else if (whichHandle == SlidingTab.OnTriggerListener.RIGHT_HANDLE) {
-                toggleRingMode();
-                mCallback.pokeWakelock();
+        /* Show given message with icon for up to duration ms. Newer messages override older ones.
+         * The most recent message with the longest duration is shown as messages expire until
+         * nothing is left, in which case the text/icon is defined by a call to
+         * getAltTextMessage() */
+        void post(final CharSequence message, final int icon, long duration) {
+            if (mTextView == null) {
+                return;
             }
-        }
-
-        /** {@inheritDoc} */
-        public void onGrabbedStateChange(View v, int grabbedState) {
-            if (grabbedState == SlidingTab.OnTriggerListener.RIGHT_HANDLE) {
-                mSilentMode = isSilentMode();
-                mSlidingTab.setRightHintText(mSilentMode ? R.string.lockscreen_sound_on_label
-                        : R.string.lockscreen_sound_off_label);
-            }
-            // Don't poke the wake lock when returning to a state where the handle is
-            // not grabbed since that can happen when the system (instead of the user)
-            // cancels the grab.
-            if (grabbedState != SlidingTab.OnTriggerListener.NO_HANDLE) {
-                mCallback.pokeWakelock();
-            }
-        }
-
-        public View getView() {
-            return mSlidingTab;
-        }
-
-        public void reset(boolean animate) {
-            mSlidingTab.reset(animate);
-        }
-
-        public void ping() {
-        }
-
-        public void setEnabled(int resourceId, boolean enabled) {
-            // Not used
-        }
-
-        public int getTargetPosition(int resourceId) {
-            return -1; // Not supported
-        }
-
-        public void cleanUp() {
-            mSlidingTab.setOnTriggerListener(null);
-        }
-    }
-
-    class WaveViewMethods implements WaveView.OnTriggerListener, UnlockWidgetCommonMethods {
-
-        private final WaveView mWaveView;
-
-        WaveViewMethods(WaveView waveView) {
-            mWaveView = waveView;
-        }
-        /** {@inheritDoc} */
-        public void onTrigger(View v, int whichHandle) {
-            if (whichHandle == WaveView.OnTriggerListener.CENTER_HANDLE) {
-                requestUnlockScreen();
-            }
-        }
-
-        /** {@inheritDoc} */
-        public void onGrabbedStateChange(View v, int grabbedState) {
-            // Don't poke the wake lock when returning to a state where the handle is
-            // not grabbed since that can happen when the system (instead of the user)
-            // cancels the grab.
-            if (grabbedState == WaveView.OnTriggerListener.CENTER_HANDLE) {
-                mCallback.pokeWakelock(STAY_ON_WHILE_GRABBED_TIMEOUT);
-            }
-        }
-
-        public void updateResources() {
-        }
-
-        public View getView() {
-            return mWaveView;
-        }
-        public void reset(boolean animate) {
-            mWaveView.reset();
-        }
-        public void ping() {
-        }
-        public void setEnabled(int resourceId, boolean enabled) {
-            // Not used
-        }
-        public int getTargetPosition(int resourceId) {
-            return -1; // Not supported
-        }
-        public void cleanUp() {
-            mWaveView.setOnTriggerListener(null);
-        }
-    }
-
-    class GlowPadViewMethods implements GlowPadView.OnTriggerListener,
-            UnlockWidgetCommonMethods {
-        private final GlowPadView mGlowPadView;
-        private String[] mStoredTargets;
-        private int mTargetOffset;
-        private boolean mIsScreenLarge;
-
-        GlowPadViewMethods(GlowPadView glowPadView) {
-            mGlowPadView = glowPadView;
-        }
-
-        public boolean isScreenLarge() {
-            final int screenSize = Resources.getSystem().getConfiguration().screenLayout &
-                    Configuration.SCREENLAYOUT_SIZE_MASK;
-            boolean isScreenLarge = screenSize == Configuration.SCREENLAYOUT_SIZE_LARGE ||
-                    screenSize == Configuration.SCREENLAYOUT_SIZE_XLARGE;
-            return isScreenLarge;
-        }
-
-        private StateListDrawable getLayeredDrawable(Drawable back, Drawable front, int inset, boolean frontBlank) {
-            Resources res = getResources();
-            InsetDrawable[] inactivelayer = new InsetDrawable[2];
-            InsetDrawable[] activelayer = new InsetDrawable[2];
-            inactivelayer[0] = new InsetDrawable(res.getDrawable(com.android.internal.R.drawable.ic_lockscreen_lock_pressed), 0, 0, 0, 0);
-            inactivelayer[1] = new InsetDrawable(front, inset, inset, inset, inset);
-            activelayer[0] = new InsetDrawable(back, 0, 0, 0, 0);
-            activelayer[1] = new InsetDrawable(frontBlank ? res.getDrawable(android.R.color.transparent) : front, inset, inset, inset, inset);
-            StateListDrawable states = new StateListDrawable();
-            LayerDrawable inactiveLayerDrawable = new LayerDrawable(inactivelayer);
-            inactiveLayerDrawable.setId(0, 0);
-            inactiveLayerDrawable.setId(1, 1);
-            LayerDrawable activeLayerDrawable = new LayerDrawable(activelayer);
-            activeLayerDrawable.setId(0, 0);
-            activeLayerDrawable.setId(1, 1);
-            states.addState(TargetDrawable.STATE_INACTIVE, inactiveLayerDrawable);
-            states.addState(TargetDrawable.STATE_ACTIVE, activeLayerDrawable);
-            states.addState(TargetDrawable.STATE_FOCUSED, activeLayerDrawable);
-            return states;
-        }
-
-        public boolean isTargetPresent(int resId) {
-            return mGlowPadView.getTargetPosition(resId) != -1;
-        }
-
-        public void updateResources() {
-            String storedVal = Settings.System.getString(mContext.getContentResolver(),
-                    Settings.System.LOCKSCREEN_TARGETS);
-            if (storedVal == null) {
-                int resId;
-                if (mCameraDisabled && mEnableRingSilenceFallback) {
-                    // Fall back to showing ring/silence if camera is disabled...
-                    resId = mSilentMode ? R.array.lockscreen_targets_when_silent
-                            : R.array.lockscreen_targets_when_soundon;
-                } else {
-                    resId = R.array.lockscreen_targets_with_camera;
-                }
-                if (mGlowPadView.getTargetResourceId() != resId) {
-                    mGlowPadView.setTargetResources(resId);
-                }
-                // Update the search icon with drawable from the search .apk
-                if (!mSearchDisabled) {
-                    Intent intent = SearchManager.getAssistIntent(mContext);
-                    if (intent != null) {
-                        // XXX Hack. We need to substitute the icon here but haven't formalized
-                        // the public API. The "_google" metadata will be going away, so
-                        // DON'T USE IT!
-                        ComponentName component = intent.getComponent();
-                        boolean replaced = mGlowPadView.replaceTargetDrawablesIfPresent(component,
-                                ASSIST_ICON_METADATA_NAME + "_google",
-                                com.android.internal.R.drawable.ic_action_assist_generic);
-
-                        if (!replaced && !mGlowPadView.replaceTargetDrawablesIfPresent(component,
-                                    ASSIST_ICON_METADATA_NAME,
-                                    com.android.internal.R.drawable.ic_action_assist_generic)) {
-                                Slog.w(TAG, "Couldn't grab icon from package " + component);
-                        }
-                    }
-                }
-                setEnabled(com.android.internal.R.drawable.ic_lockscreen_camera, !mCameraDisabled);
-                setEnabled(com.android.internal.R.drawable.ic_action_assist_generic, !mSearchDisabled);
-            } else {
-                mStoredTargets = storedVal.split("\\|");
-                mIsScreenLarge = isScreenLarge();
-                ArrayList<TargetDrawable> storedDraw = new ArrayList<TargetDrawable>();
-                final Resources res = getResources();
-                final int targetInset = res.getDimensionPixelSize(com.android.internal.R.dimen.lockscreen_target_inset);
-                final PackageManager packMan = mContext.getPackageManager();
-                final boolean isLandscape = mCreationOrientation == Configuration.ORIENTATION_LANDSCAPE;
-                final Drawable blankActiveDrawable = res.getDrawable(R.drawable.ic_lockscreen_target_activated);
-                final InsetDrawable activeBack = new InsetDrawable(blankActiveDrawable, 0, 0, 0, 0);
-                // Shift targets for landscape lockscreen on phones
-                mTargetOffset = isLandscape && !mIsScreenLarge ? 2 : 0;
-                if (mTargetOffset == 2) {
-                    storedDraw.add(new TargetDrawable(res, null));
-                    storedDraw.add(new TargetDrawable(res, null));
-                }
-                // Add unlock target
-                storedDraw.add(new TargetDrawable(res, res.getDrawable(R.drawable.ic_lockscreen_unlock)));
-                for (int i = 0; i < 8 - mTargetOffset - 1; i++) {
-                    int tmpInset = targetInset;
-                    if (i < mStoredTargets.length) {
-                        String uri = mStoredTargets[i];
-                        if (!uri.equals(GlowPadView.EMPTY_TARGET)) {
-                            try {
-                                Intent in = Intent.parseUri(uri,0);
-                                Drawable front = null;
-                                Drawable back = activeBack;
-                                boolean frontBlank = false;
-                                if (in.hasExtra(GlowPadView.ICON_FILE)) {
-                                    String fSource = in.getStringExtra(GlowPadView.ICON_FILE);
-                                    if (fSource != null) {
-                                        File fPath = new File(fSource);
-                                        if (fPath.exists()) {
-                                            front = new BitmapDrawable(res, BitmapFactory.decodeFile(fSource));
-                                        }
-                                    }
-                                } else if (in.hasExtra(GlowPadView.ICON_RESOURCE)) {
-                                    String rSource = in.getStringExtra(GlowPadView.ICON_RESOURCE);
-                                    String rPackage = in.getStringExtra(GlowPadView.ICON_PACKAGE);
-                                    if (rSource != null) {
-                                        if (rPackage != null) {
-                                            try {
-                                                Context rContext = mContext.createPackageContext(rPackage, 0);
-                                                int id = rContext.getResources().getIdentifier(rSource, "drawable", rPackage);
-                                                front = rContext.getResources().getDrawable(id);
-                                                id = rContext.getResources().getIdentifier(rSource.replaceAll("_normal", "_activated"),
-                                                        "drawable", rPackage);
-                                                back = rContext.getResources().getDrawable(id);
-                                                tmpInset = 0;
-                                                frontBlank = true;
-                                            } catch (NameNotFoundException e) {
-                                                e.printStackTrace();
-                                            } catch (NotFoundException e) {
-                                                e.printStackTrace();
-                                            }
-                                        } else {
-                                            front = res.getDrawable(res.getIdentifier(rSource, "drawable", "android"));
-                                            back = res.getDrawable(res.getIdentifier(
-                                                    rSource.replaceAll("_normal", "_activated"), "drawable", "android"));
-                                            tmpInset = 0;
-                                            frontBlank = true;
-                                        }
-                                    }
-                                }
-                                if (front == null || back == null) {
-                                    ActivityInfo aInfo = in.resolveActivityInfo(packMan, PackageManager.GET_ACTIVITIES);
-                                    if (aInfo != null) {
-                                        front = aInfo.loadIcon(packMan);
-                                    } else {
-                                        front = res.getDrawable(android.R.drawable.sym_def_app_icon);
-                                    }
-                                }
-                                TargetDrawable nDrawable = new TargetDrawable(res, getLayeredDrawable(back,front, tmpInset, frontBlank));
-                                boolean isCamera = in.getComponent().getClassName().equals("com.android.camera.CameraLauncher");
-                                if (isCamera) {
-                                    nDrawable.setEnabled(!mCameraDisabled);
-                                } else {
-                                    boolean isSearch = in.getComponent().getClassName().equals("SearchActivity");
-                                    if (isSearch) {
-                                        nDrawable.setEnabled(!mSearchDisabled);
-                                    }
-                                }
-                                storedDraw.add(nDrawable);
-                            } catch (Exception e) {
-                                storedDraw.add(new TargetDrawable(res, 0));
-                            }
-                        } else {
-                            storedDraw.add(new TargetDrawable(res, 0));
-                        }
+            mTextView.setText(message);
+            mTextView.setCompoundDrawablesWithIntrinsicBounds(icon, 0, 0, 0);
+            final Data data = new Data(message, icon);
+            mContainer.postDelayed(new Runnable() {
+                public void run() {
+                    mMessages.remove(data);
+                    int last = mMessages.size() - 1;
+                    final CharSequence lastText;
+                    final int lastIcon;
+                    if (last > 0) {
+                        final Data oldData = mMessages.get(last);
+                        lastText = oldData.text;
+                        lastIcon = oldData.icon;
                     } else {
-                        storedDraw.add(new TargetDrawable(res, 0));
+                        final MutableInt tmpIcon = new MutableInt(0);
+                        lastText = getAltTextMessage(tmpIcon);
+                        lastIcon = tmpIcon.value;
                     }
+                    mTextView.setText(lastText);
+                    mTextView.setCompoundDrawablesWithIntrinsicBounds(lastIcon, 0, 0, 0);
                 }
-                mGlowPadView.setTargetResources(storedDraw);
-            }
+            }, duration);
         }
-
-        public void onGrabbed(View v, int handle) {
-
-        }
-
-        public void onReleased(View v, int handle) {
-
-        }
-
-        public void onTrigger(View v, int target) {
-            if (mStoredTargets == null) {
-                final int resId = mGlowPadView.getResourceIdForTarget(target);
-                switch (resId) {
-                case com.android.internal.R.drawable.ic_action_assist_generic:
-                    Intent assistIntent = SearchManager.getAssistIntent(mContext);
-                    if (assistIntent != null) {
-                        launchActivity(assistIntent);
-                    } else {
-                        Log.w(TAG, "Failed to get intent for assist activity");
-                    }
-                    mCallback.pokeWakelock();
-                    break;
-
-                case com.android.internal.R.drawable.ic_lockscreen_camera:
-                    launchActivity(new Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA));
-                    mCallback.pokeWakelock();
-                    break;
-
-                case com.android.internal.R.drawable.ic_lockscreen_silent:
-                    toggleRingMode();
-                    mCallback.pokeWakelock();
-                    break;
-
-                case com.android.internal.R.drawable.ic_lockscreen_unlock_phantom:
-                case com.android.internal.R.drawable.ic_lockscreen_unlock:
-                    mCallback.goToUnlockScreen();
-                    break;
-                }
-            } else {
-                final boolean isLand = mCreationOrientation == Configuration.ORIENTATION_LANDSCAPE;
-                if ((target == 0 && (mIsScreenLarge || !isLand)) || (target == 2 && !mIsScreenLarge && isLand)) {
-                    mCallback.goToUnlockScreen();
-                } else {
-                    target -= 1 + mTargetOffset;
-                    if (target < mStoredTargets.length && mStoredTargets[target] != null) {
-                        try {
-                            Intent tIntent = Intent.parseUri(mStoredTargets[target], 0);
-                            tIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                            mContext.startActivity(tIntent);
-                            mCallback.goToUnlockScreen();
-                            return;
-                        } catch (URISyntaxException e) {
-                        } catch (ActivityNotFoundException e) {
-                        }
-                    }
-                }
-            }
-        }
-
-        private void launchActivity(Intent intent) {
-            intent.setFlags(
-                    Intent.FLAG_ACTIVITY_NEW_TASK
-                    | Intent.FLAG_ACTIVITY_SINGLE_TOP
-                    | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-            try {
-                ActivityManagerNative.getDefault().dismissKeyguardOnNextActivity();
-            } catch (RemoteException e) {
-                Log.w(TAG, "can't dismiss keyguard on launch");
-            }
-            try {
-                mContext.startActivity(intent);
-            } catch (ActivityNotFoundException e) {
-                Log.w(TAG, "Activity not found for intent + " + intent.getAction());
-            }
-        }
-
-        public void onGrabbedStateChange(View v, int handle) {
-            // Don't poke the wake lock when returning to a state where the handle is
-            // not grabbed since that can happen when the system (instead of the user)
-            // cancels the grab.
-            if (handle != GlowPadView.OnTriggerListener.NO_HANDLE) {
-                mCallback.pokeWakelock();
-            }
-        }
-
-        public View getView() {
-            return mGlowPadView;
-        }
-
-        public void reset(boolean animate) {
-            mGlowPadView.reset(animate);
-        }
-
-        public void ping() {
-            mGlowPadView.ping();
-        }
-
-        public void setEnabled(int resourceId, boolean enabled) {
-            mGlowPadView.setEnableTarget(resourceId, enabled);
-        }
-
-        public int getTargetPosition(int resourceId) {
-            return mGlowPadView.getTargetPosition(resourceId);
-        }
-
-        public void cleanUp() {
-            mGlowPadView.setOnTriggerListener(null);
-        }
-
-        public void onFinishFinalAnimation() {
-
-        }
-    }
-
-    private void requestUnlockScreen() {
-        // Delay hiding lock screen long enough for animation to finish
-        postDelayed(new Runnable() {
-            public void run() {
-                mCallback.goToUnlockScreen();
-            }
-        }, WAIT_FOR_ANIMATION_TIMEOUT);
-    }
-
-    private void toggleRingMode() {
-        // toggle silent mode
-        mSilentMode = !mSilentMode;
-        if (mSilentMode) {
-            mAudioManager.setRingerMode(mHasVibrator
-                ? AudioManager.RINGER_MODE_VIBRATE
-                : AudioManager.RINGER_MODE_SILENT);
-        } else {
-            mAudioManager.setRingerMode(AudioManager.RINGER_MODE_NORMAL);
-        }
-    }
+    };
 
     /**
-     * In general, we enable unlocking the insecure key guard with the menu key. However, there are
-     * some cases where we wish to disable it, notably when the menu button placement or technology
-     * is prone to false positives.
      *
-     * @return true if the menu key should be enabled
+     * @param view the containing view of all widgets
+     * @param updateMonitor the update monitor to use
+     * @param lockPatternUtils lock pattern util object
+     * @param callback used to invoke emergency dialer
+     * @param emergencyButtonEnabledInScreen whether emergency button is enabled by default
      */
-    private boolean shouldEnableMenuKey() {
-        final Resources res = getResources();
-        final boolean configDisabled = res.getBoolean(R.bool.config_disableMenuKeyInLockScreen);
-        final boolean isTestHarness = ActivityManager.isRunningInTestHarness();
-        final boolean fileOverride = (new File(ENABLE_MENU_KEY_FILE)).exists();
-        final boolean menuOverride = Settings.System.getInt(getContext().getContentResolver(), Settings.System.MENU_UNLOCK_SCREEN, 0) == 1;
-        return !configDisabled || isTestHarness || fileOverride || menuOverride;
-    }
-
-    /**
-     * @param context Used to setup the view.
-     * @param configuration The current configuration. Used to use when selecting layout, etc.
-     * @param lockPatternUtils Used to know the state of the lock pattern settings.
-     * @param updateMonitor Used to register for updates on various keyguard related
-     *    state, and query the initial state at setup.
-     * @param callback Used to communicate back to the host keyguard view.
-     */
-    LockScreen(Context context, Configuration configuration, LockPatternUtils lockPatternUtils,
-            KeyguardUpdateMonitor updateMonitor,
-            KeyguardScreenCallback callback) {
-        super(context);
+    public KeyguardStatusViewManager(View view, KeyguardUpdateMonitor updateMonitor,
+                LockPatternUtils lockPatternUtils, KeyguardScreenCallback callback,
+                boolean emergencyButtonEnabledInScreen) {
+        if (DEBUG) Log.v(TAG, "KeyguardStatusViewManager()");
+        mContainer = view;
+        mDateFormatString = getContext().getString(R.string.abbrev_wday_month_day_no_year);
         mLockPatternUtils = lockPatternUtils;
         mUpdateMonitor = updateMonitor;
         mCallback = callback;
-        mEnableMenuKeyInLockScreen = shouldEnableMenuKey();
-        mCreationOrientation = configuration.orientation;
 
-        if (LockPatternKeyguardView.DEBUG_CONFIGURATION) {
-            Log.v(TAG, "***** CREATING LOCK SCREEN", new RuntimeException());
-            Log.v(TAG, "Cur orient=" + mCreationOrientation
-                    + " res orient=" + context.getResources().getConfiguration().orientation);
+        mCarrierView = (TextView) findViewById(R.id.carrier);
+        mDateView = (TextView) findViewById(R.id.date);
+        mStatus1View = (TextView) findViewById(R.id.status1);
+        mAlarmStatusView = (TextView) findViewById(R.id.alarm_status);
+        mOwnerInfoView = (TextView) findViewById(R.id.propertyOf);
+        mDateLineView = (LinearLayout) findViewById(R.id.date_line);
+        mTransportView = (TransportControlView) findViewById(R.id.transport);
+        mEmergencyCallButton = (Button) findViewById(R.id.emergencyCallButton);
+        mEmergencyCallButtonEnabledInScreen = emergencyButtonEnabledInScreen;
+        mDigitalClock = (DigitalClock) findViewById(R.id.time);
+
+        // Weather panel
+        mWeatherPanel = (RelativeLayout) findViewById(R.id.weather_panel);
+        mWeatherCity = (TextView) findViewById(R.id.weather_city);
+        mWeatherCondition = (TextView) findViewById(R.id.weather_condition);
+        mWeatherImage = (ImageView) findViewById(R.id.weather_image);
+        mWeatherTemp = (TextView) findViewById(R.id.weather_temp);
+        mWeatherLowHigh = (TextView) findViewById(R.id.weather_low_high);
+        mWeatherUpdateTime = (TextView) findViewById(R.id.update_time);
+        mWeatherTempsPanel = (RelativeLayout) findViewById(R.id.weather_temps_panel);
+
+        // Hide Weather panel view until we know we need to show it.
+        if (mWeatherPanel != null) {
+            mWeatherPanel.setVisibility(View.GONE);
+            mWeatherPanel.setOnClickListener(this);
         }
 
-        final LayoutInflater inflater = LayoutInflater.from(context);
-        if (DBG) Log.v(TAG, "Creation orientation = " + mCreationOrientation);
-        if (mCreationOrientation != Configuration.ORIENTATION_LANDSCAPE) {
-            inflater.inflate(R.layout.keyguard_screen_tab_unlock, this, true);
-        } else {
-            inflater.inflate(R.layout.keyguard_screen_tab_unlock_land, this, true);
+        // Calendar panel
+        mCalendarPanel = (LinearLayout) findViewById(R.id.calendar_panel);
+        mCalendarEventTitle = (TextView) findViewById(R.id.calendar_event_title);
+        mCalendarEventDetails = (TextView) findViewById(R.id.calendar_event_details);
+
+        // Hide calendar panel view until we know we need to show it.
+        if (mCalendarPanel != null) {
+            mCalendarPanel.setVisibility(View.GONE);
         }
 
-        setBackground(mContext, (ViewGroup) findViewById(R.id.root));
-
-        mStatusViewManager = new KeyguardStatusViewManager(this, mUpdateMonitor, mLockPatternUtils,
-                mCallback, false);
-
-        setFocusable(true);
-        setFocusableInTouchMode(true);
-        setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS);
-
-        Vibrator vibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
-        mHasVibrator = vibrator == null ? false : vibrator.hasVibrator();
-        mAudioManager = (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE);
-        mSilentMode = isSilentMode();
-        mUnlockWidget = findViewById(R.id.unlock_widget);
-        mUnlockWidgetMethods = createUnlockMethods(mUnlockWidget);
-
-        if (DBG) Log.v(TAG, "*** LockScreen accel is "
-                + (mUnlockWidget.isHardwareAccelerated() ? "on":"off"));
-    }
-
-    private UnlockWidgetCommonMethods createUnlockMethods(View unlockWidget) {
-        if (unlockWidget instanceof SlidingTab) {
-            SlidingTab slidingTabView = (SlidingTab) unlockWidget;
-            slidingTabView.setHoldAfterTrigger(true, false);
-            slidingTabView.setLeftHintText(R.string.lockscreen_unlock_label);
-            slidingTabView.setLeftTabResources(
-                    R.drawable.ic_jog_dial_unlock,
-                    R.drawable.jog_tab_target_green,
-                    R.drawable.jog_tab_bar_left_unlock,
-                    R.drawable.jog_tab_left_unlock);
-            SlidingTabMethods slidingTabMethods = new SlidingTabMethods(slidingTabView);
-            slidingTabView.setOnTriggerListener(slidingTabMethods);
-            return slidingTabMethods;
-        } else if (unlockWidget instanceof WaveView) {
-            WaveView waveView = (WaveView) unlockWidget;
-            WaveViewMethods waveViewMethods = new WaveViewMethods(waveView);
-            waveView.setOnTriggerListener(waveViewMethods);
-            return waveViewMethods;
-        } else if (unlockWidget instanceof GlowPadView) {
-            GlowPadView glowPadView = (GlowPadView) unlockWidget;
-            GlowPadViewMethods glowPadViewMethods = new GlowPadViewMethods(glowPadView);
-            glowPadView.setOnTriggerListener(glowPadViewMethods);
-            return glowPadViewMethods;
-        } else {
-            throw new IllegalStateException("Unrecognized unlock widget: " + unlockWidget);
+        // Hide transport control view until we know we need to show it.
+        if (mTransportView != null) {
+            mTransportView.setVisibility(View.GONE);
         }
-    }
 
-    private void updateTargets() {
-        boolean disabledByAdmin = mLockPatternUtils.getDevicePolicyManager()
-                .getCameraDisabled(null);
-        boolean disabledBySimState = mUpdateMonitor.isSimLocked();
-        boolean cameraPresent = mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA);
-        boolean searchTargetPresent = (mUnlockWidgetMethods instanceof GlowPadViewMethods)
-                ? ((GlowPadViewMethods) mUnlockWidgetMethods)
-                        .isTargetPresent(com.android.internal.R.drawable.ic_action_assist_generic)
-                        : false;
-
-        if (disabledByAdmin) {
-            Log.v(TAG, "Camera disabled by Device Policy");
-        } else if (disabledBySimState) {
-            Log.v(TAG, "Camera disabled by Sim State");
+        if (mEmergencyCallButton != null) {
+            mEmergencyCallButton.setText(R.string.lockscreen_emergency_call);
+            mEmergencyCallButton.setOnClickListener(this);
+            mEmergencyCallButton.setFocusable(false); // touch only!
         }
-        boolean searchActionAvailable = SearchManager.getAssistIntent(mContext) != null;
-        mCameraDisabled = disabledByAdmin || disabledBySimState || !cameraPresent;
-        mSearchDisabled = disabledBySimState || !searchActionAvailable || !searchTargetPresent;
-        mUnlockWidgetMethods.updateResources();
-    }
 
-    static void setBackground(Context context, ViewGroup layout) {
-        String lockBack = Settings.System.getString(context.getContentResolver(), Settings.System.LOCKSCREEN_BACKGROUND);
-        if (lockBack != null) {
-            if (!lockBack.isEmpty()) {
-                try {
-                    layout.setBackgroundColor(Integer.parseInt(lockBack));
-                } catch(NumberFormatException e) {
-                    e.printStackTrace();
-                }
-            } else {
-                try {
-                    ViewParent parent =  layout.getParent();
-                    if (parent != null) {
-                        //change parent to show background correctly on scale
-                        RelativeLayout rlout = new RelativeLayout(context);
-                        ((ViewGroup) parent).removeView(layout);
-                        layout.setLayoutParams(new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-                        ((ViewGroup) parent).addView(rlout); // change parent to new layout
-                        rlout.addView(layout);
-                        // create framelayout and add imageview to set background
-                        FrameLayout flayout = new FrameLayout(context);
-                        flayout.setLayoutParams(new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-                        ImageView mLockScreenWallpaperImage = new ImageView(flayout.getContext());
-                        mLockScreenWallpaperImage.setScaleType(ScaleType.CENTER_CROP);
-                        flayout.addView(mLockScreenWallpaperImage, -1, -1);
-                        Context settingsContext = context.createPackageContext("com.android.settings", 0);
-                        String wallpaperFile = settingsContext.getFilesDir() + "/lockwallpaper";
-                        Bitmap background = BitmapFactory.decodeFile(wallpaperFile);
-                        Drawable d = new BitmapDrawable(context.getResources(), background);
-                        mLockScreenWallpaperImage.setImageDrawable(d);
-                        // add background to lock screen.
-                        rlout.addView(flayout,0);
-                    }
-                } catch (NameNotFoundException e) {
-                }
+        mTransientTextManager = new TransientTextManager(mCarrierView);
+
+        mUpdateMonitor.registerInfoCallback(mInfoCallback);
+        mUpdateMonitor.registerSimStateCallback(mSimStateCallback);
+
+        resetStatusInfo();
+        refreshDate();
+        updateOwnerInfo();
+        refreshWeather();
+        refreshCalendar();
+        if (mDigitalClock != null) {
+            updateClockAlign();
+        }
+
+        // Required to get Marquee to work.
+        final View scrollableViews[] = { mCarrierView, mDateView, mStatus1View, mOwnerInfoView,
+                mAlarmStatusView, mCalendarEventDetails, mWeatherCity, mWeatherCondition };
+        for (View v : scrollableViews) {
+            if (v != null) {
+                v.setSelected(true);
             }
         }
     }
 
-    private boolean isSilentMode() {
-        return mAudioManager.getRingerMode() != AudioManager.RINGER_MODE_NORMAL;
-    }
+    /*
+     * CyanogenMod Lock screen Weather related functionality
+     */
+    private static final String URL_YAHOO_API_WEATHER = "http://weather.yahooapis.com/forecastrss?w=%s&u=";
+    private static WeatherInfo mWeatherInfo = new WeatherInfo();
+    private static final int QUERY_WEATHER = 0;
+    private static final int UPDATE_WEATHER = 1;
+    private boolean mWeatherRefreshing;
 
-    @Override
-    public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if (keyCode == KeyEvent.KEYCODE_MENU && mEnableMenuKeyInLockScreen) {
-            mCallback.goToUnlockScreen();
-        }
-        return false;
-    }
+    private Handler mHandler = new Handler() {
+        @Override
+        public void handleMessage(Message msg) {
+            switch (msg.what) {
+            case QUERY_WEATHER:
+                Thread queryWeather = new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        LocationManager locationManager = (LocationManager) getContext().
+                                getSystemService(Context.LOCATION_SERVICE);
+                        final ContentResolver resolver = getContext().getContentResolver();
+                        boolean useCustomLoc = Settings.System.getInt(resolver,
+                                Settings.System.WEATHER_USE_CUSTOM_LOCATION, 0) == 1;
+                        String customLoc = Settings.System.getString(resolver,
+                                    Settings.System.WEATHER_CUSTOM_LOCATION);
+                        String woeid = null;
 
-    void updateConfiguration() {
-        Configuration newConfig = getResources().getConfiguration();
-        if (newConfig.orientation != mCreationOrientation) {
-            mCallback.recreateMe(newConfig);
-        }
-    }
-
-    @Override
-    protected void onAttachedToWindow() {
-        super.onAttachedToWindow();
-        if (LockPatternKeyguardView.DEBUG_CONFIGURATION) {
-            Log.v(TAG, "***** LOCK ATTACHED TO WINDOW");
-            Log.v(TAG, "Cur orient=" + mCreationOrientation
-                    + ", new config=" + getResources().getConfiguration());
-        }
-        updateConfiguration();
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    protected void onConfigurationChanged(Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
-        if (LockPatternKeyguardView.DEBUG_CONFIGURATION) {
-            Log.w(TAG, "***** LOCK CONFIG CHANGING", new RuntimeException());
-            Log.v(TAG, "Cur orient=" + mCreationOrientation
-                    + ", new config=" + newConfig);
-        }
-        updateConfiguration();
-    }
-
-    /** {@inheritDoc} */
-    public boolean suspendRecreate() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    public boolean needsInput() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    public void onPause() {
-        mUpdateMonitor.removeCallback(mInfoCallback);
-        mUpdateMonitor.removeCallback(mSimStateCallback);
-        mStatusViewManager.onPause();
-        mUnlockWidgetMethods.reset(false);
-    }
-
-    private final Runnable mOnResumePing = new Runnable() {
-        public void run() {
-            mUnlockWidgetMethods.ping();
+                        // custom location
+                        if (customLoc != null && useCustomLoc) {
+                            try {
+                                woeid = YahooPlaceFinder.GeoCode(getContext().getApplicationContext(), customLoc);
+                                if (DEBUG)
+                                    Log.d(TAG, "Yahoo location code for " + customLoc + " is " + woeid);
+                            } catch (Exception e) {
+                                Log.e(TAG, "ERROR: Could not get Location code");
+                                e.printStackTrace();
+                            }
+                        // network location
+                        } else {
+                            Criteria crit = new Criteria();
+                            crit.setAccuracy(Criteria.ACCURACY_COARSE);
+                            String bestProvider = locationManager.getBestProvider(crit, true);
+                            Location loc = null;
+                            if (bestProvider != null) {
+                                loc = locationManager.getLastKnownLocation(bestProvider);
+                            } else {
+                                loc = locationManager.getLastKnownLocation(LocationManager.PASSIVE_PROVIDER);
+                            }
+                            try {
+                                woeid = YahooPlaceFinder.reverseGeoCode(getContext(), loc.getLatitude(),
+                                        loc.getLongitude());
+                                if (DEBUG)
+                                    Log.d(TAG, "Yahoo location code for current geolocation is " + woeid);
+                            } catch (Exception e) {
+                                Log.e(TAG, "ERROR: Could not get Location code");
+                                e.printStackTrace();
+                            }
+                        }
+                        if (DEBUG) {
+                            Log.d(TAG, "Location code is " + woeid);
+                        }
+                        WeatherInfo w = null;
+                        if (woeid != null) {
+                            try {
+                                w = parseXml(getDocument(woeid));
+                            } catch (Exception e) {
+                            }
+                        }
+                        Message msg = Message.obtain();
+                        msg.what = UPDATE_WEATHER;
+                        msg.obj = w;
+                        mHandler.sendMessage(msg);
+                    }
+                });
+                mWeatherRefreshing = true;
+                queryWeather.setPriority(Thread.MIN_PRIORITY);
+                queryWeather.start();
+                break;
+            case UPDATE_WEATHER:
+                WeatherInfo w = (WeatherInfo) msg.obj;
+                if (w != null) {
+                    mWeatherRefreshing = false;
+                    setWeatherData(w);
+                    mWeatherInfo = w;
+                } else {
+                    mWeatherRefreshing = false;
+                    if (mWeatherInfo.temp.equals(WeatherInfo.NODATA)) {
+                        setNoWeatherData();
+                    } else {
+                        setWeatherData(mWeatherInfo);
+                    }
+                }
+                break;
+            }
         }
     };
 
-    /** {@inheritDoc} */
-    public void onResume() {
-        // We don't want to show the camera target if SIM state prevents us from
-        // launching the camera. So watch for SIM changes...
-        mUpdateMonitor.registerSimStateCallback(mSimStateCallback);
-        mUpdateMonitor.registerInfoCallback(mInfoCallback);
+    /**
+     * Reload the weather forecast
+     */
+    private void refreshWeather() {
+        final ContentResolver resolver = getContext().getContentResolver();
+        boolean showWeather = Settings.System.getInt(resolver,Settings.System.LOCKSCREEN_WEATHER, 0) == 1;
 
-        mStatusViewManager.onResume();
-        postDelayed(mOnResumePing, ON_RESUME_PING_DELAY);
+        if (showWeather) {
+            final long interval = Settings.System.getLong(resolver,
+                    Settings.System.WEATHER_UPDATE_INTERVAL, 60); // Default to hourly
+            boolean manualSync = (interval == 0);
+            if (!manualSync && (((System.currentTimeMillis() - mWeatherInfo.last_sync) / 60000) >= interval)) {
+                if (!mWeatherRefreshing) {
+                    mHandler.sendEmptyMessage(QUERY_WEATHER);
+                }
+            } else if (manualSync && mWeatherInfo.last_sync == 0) {
+                setNoWeatherData();
+            } else {
+                setWeatherData(mWeatherInfo);
+            }
+        } else {
+            // Hide the Weather panel view
+            if (mWeatherPanel != null) {
+                mWeatherPanel.setVisibility(View.GONE);
+            }
+        }
+    }
+
+    /**
+     * Display the weather information
+     * @param w
+     */
+    private void setWeatherData(WeatherInfo w) {
+        final ContentResolver resolver = getContext().getContentResolver();
+        final Resources res = getContext().getResources();
+        boolean showLocation = Settings.System.getInt(resolver,
+                Settings.System.WEATHER_SHOW_LOCATION, 1) == 1;
+        boolean showTimestamp = Settings.System.getInt(resolver,
+                Settings.System.WEATHER_SHOW_TIMESTAMP, 1) == 1;
+        boolean invertLowhigh = Settings.System.getInt(resolver,
+                Settings.System.WEATHER_INVERT_LOWHIGH, 0) == 1;
+
+        if (mWeatherPanel != null) {
+            if (mWeatherImage != null) {
+                String conditionCode = w.condition_code;
+                String condition_filename = "weather_" + conditionCode;
+                int resID = res.getIdentifier(condition_filename, "drawable",
+                        getContext().getPackageName());
+
+                if (DEBUG)
+                    Log.d("Weather", "Condition:" + conditionCode + " ID:" + resID);
+
+                if (resID != 0) {
+                    mWeatherImage.setImageDrawable(res.getDrawable(resID));
+                } else {
+                    mWeatherImage.setImageResource(R.drawable.weather_na);
+                }
+            }
+            if (mWeatherCity != null) {
+                mWeatherCity.setText(w.city);
+                mWeatherCity.setVisibility(showLocation ? View.VISIBLE : View.GONE);
+            }
+            if (mWeatherCondition != null && !mWeatherRefreshing) {
+                mWeatherCondition.setText(w.condition);
+                mWeatherCondition.setVisibility(View.VISIBLE);
+            }
+            if (mWeatherUpdateTime != null) {
+                long now = System.currentTimeMillis();
+                if (now - w.last_sync < 60000) {
+                    mWeatherUpdateTime.setText(R.string.weather_last_sync_just_now);
+                } else {
+                    mWeatherUpdateTime.setText(DateUtils.getRelativeTimeSpanString(
+                            w.last_sync, now, DateUtils.MINUTE_IN_MILLIS));
+                }
+                mWeatherUpdateTime.setVisibility(showTimestamp ? View.VISIBLE : View.GONE);
+            }
+            if (mWeatherTempsPanel != null && mWeatherTemp != null && mWeatherLowHigh != null) {
+                mWeatherTemp.setText(w.temp);
+                mWeatherLowHigh.setText(invertLowhigh ? w.high + " | " + w.low : w.low + " | " + w.high);
+                mWeatherTempsPanel.setVisibility(View.VISIBLE);
+            }
+
+            // Show the Weather panel view
+            mWeatherPanel.setVisibility(View.VISIBLE);
+        }
+    }
+
+    /**
+     * There is no data to display, display 'empty' fields and the
+     * 'Tap to reload' message
+     */
+    private void setNoWeatherData() {
+
+        if (mWeatherPanel != null) {
+            if (mWeatherImage != null) {
+                mWeatherImage.setImageResource(R.drawable.weather_na);
+            }
+            if (mWeatherCity != null) {
+                mWeatherCity.setText(R.string.weather_no_data);
+                mWeatherCity.setVisibility(View.VISIBLE);
+            }
+            if (mWeatherCondition != null && !mWeatherRefreshing) {
+                mWeatherCondition.setText(R.string.weather_tap_to_refresh);
+            }
+            if (mWeatherUpdateTime != null) {
+                mWeatherUpdateTime.setVisibility(View.GONE);
+            }
+            if (mWeatherTempsPanel != null ) {
+                mWeatherTempsPanel.setVisibility(View.GONE);
+            }
+
+            // Show the Weather panel view
+            mWeatherPanel.setVisibility(View.VISIBLE);
+        }
+    }
+
+    /**
+     * Get the weather forecast XML document for a specific location
+     * @param woeid
+     * @return
+     */
+    private Document getDocument(String woeid) {
+        try {
+            boolean celcius = Settings.System.getInt(getContext().getContentResolver(),
+                    Settings.System.WEATHER_USE_METRIC, 1) == 1;
+            String urlWithDegreeUnit;
+
+            if (celcius) {
+                urlWithDegreeUnit = URL_YAHOO_API_WEATHER + "c";
+            } else {
+                urlWithDegreeUnit = URL_YAHOO_API_WEATHER + "f";
+            }
+
+            return new HttpRetriever().getDocumentFromURL(String.format(urlWithDegreeUnit, woeid));
+        } catch (IOException e) {
+            Log.e(TAG, "Error querying Yahoo weather");
+        }
+
+        return null;
+    }
+
+    /**
+     * Parse the weather XML document
+     * @param wDoc
+     * @return
+     */
+    private WeatherInfo parseXml(Document wDoc) {
+        try {
+            return new WeatherXmlParser(getContext()).parseWeatherResponse(wDoc);
+        } catch (Exception e) {
+            Log.e(TAG, "Error parsing Yahoo weather XML document");
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    /*
+     * CyanogenMod Lock screen Calendar related functionality
+     */
+
+    private void refreshCalendar() {
+        if (mCalendarPanel != null) {
+            final ContentResolver resolver = getContext().getContentResolver();
+            String[] nextCalendar = null;
+            boolean visible = false; // Assume we are not showing the view
+
+            // Load the settings
+            boolean lockCalendar = (Settings.System.getInt(resolver,
+                    Settings.System.LOCKSCREEN_CALENDAR, 0) == 1);
+            String[] calendars = parseStoredValue(Settings.System.getString(
+                    resolver, Settings.System.LOCKSCREEN_CALENDARS));
+            boolean lockCalendarRemindersOnly = (Settings.System.getInt(resolver,
+                    Settings.System.LOCKSCREEN_CALENDAR_REMINDERS_ONLY, 0) == 1);
+            long lockCalendarLookahead = Settings.System.getLong(resolver,
+                    Settings.System.LOCKSCREEN_CALENDAR_LOOKAHEAD, 10800000);
+
+            if (lockCalendar) {
+                nextCalendar = mLockPatternUtils.getNextCalendarAlarm(lockCalendarLookahead,
+                        calendars, lockCalendarRemindersOnly);
+                if (nextCalendar[0] != null && mCalendarEventTitle != null) {
+                    mCalendarEventTitle.setText(nextCalendar[0].toString());
+                    if (nextCalendar[1] != null && mCalendarEventDetails != null) {
+                        mCalendarEventDetails.setText(nextCalendar[1]);
+                    }
+                    visible = true;
+                }
+            }
+
+           mCalendarPanel.setVisibility(visible ? View.VISIBLE : View.GONE);
+        }
+    }
+
+    /**
+     * Split the MultiSelectListPreference string based on a separator of ',' and
+     * stripping off the start [ and the end ]
+     * @param val
+     * @return
+     */
+    private static String[] parseStoredValue(String val) {
+        if (val == null || val.isEmpty())
+            return null;
+        else {
+            // Strip off the start [ and the end ] before splitting
+            val = val.substring(1, val.length() -1);
+            return (val.split(","));
+        }
+    }
+
+    private boolean inWidgetMode() {
+        return mTransportView != null && mTransportView.getVisibility() == View.VISIBLE;
+    }
+
+    void setInstructionText(String string) {
+        mInstructionText = string;
+        update(INSTRUCTION_TEXT, string);
+    }
+
+    void setCarrierText(CharSequence string) {
+        mCarrierText = string;
+        update(CARRIER_TEXT, string);
+    }
+
+    void setOwnerInfo(CharSequence string) {
+        mOwnerInfoText = string;
+        update(OWNER_INFO, string);
+    }
+
+    /**
+     * Sets the carrier help text message, if view is present. Carrier help text messages are
+     * typically for help dealing with SIMS and connectivity.
+     *
+     * @param resId resource id of the message
+     */
+    public void setCarrierHelpText(int resId) {
+        mCarrierHelpText = getText(resId);
+        update(CARRIER_HELP_TEXT, mCarrierHelpText);
+    }
+
+    private CharSequence getText(int resId) {
+        return resId == 0 ? null : getContext().getText(resId);
+    }
+
+    /**
+     * Unlock help message.  This is typically for help with unlock widgets, e.g. "wrong password"
+     * or "try again."
+     *
+     * @param textResId
+     * @param lockIcon
+     */
+    public void setHelpMessage(int textResId, int lockIcon) {
+        final CharSequence tmp = getText(textResId);
+        mHelpMessageText = tmp == null ? null : tmp.toString();
+        update(HELP_MESSAGE_TEXT, mHelpMessageText);
+    }
+
+    private void update(int what, CharSequence string) {
+        if (inWidgetMode()) {
+            if (DEBUG) Log.v(TAG, "inWidgetMode() is true");
+            // Use Transient text for messages shown while widget is shown.
+            switch (what) {
+                case INSTRUCTION_TEXT:
+                case CARRIER_HELP_TEXT:
+                case HELP_MESSAGE_TEXT:
+                case BATTERY_INFO:
+                    mTransientTextManager.post(string, 0, INSTRUCTION_RESET_DELAY);
+                    break;
+
+                case OWNER_INFO:
+                case CARRIER_TEXT:
+                default:
+                    if (DEBUG) Log.w(TAG, "Not showing message id " + what + ", str=" + string);
+            }
+        } else {
+            updateStatusLines(mShowingStatus);
+        }
+    }
+
+    public void onPause() {
+        if (DEBUG) Log.v(TAG, "onPause()");
+        mUpdateMonitor.removeCallback(mInfoCallback);
+        mUpdateMonitor.removeCallback(mSimStateCallback);
     }
 
     /** {@inheritDoc} */
-    public void cleanUp() {
-        mUpdateMonitor.removeCallback(mInfoCallback); // this must be first
-        mUpdateMonitor.removeCallback(mSimStateCallback);
-        mUnlockWidgetMethods.cleanUp();
-        mLockPatternUtils = null;
-        mUpdateMonitor = null;
-        mCallback = null;
+    public void onResume() {
+        if (DEBUG) Log.v(TAG, "onResume()");
+
+        // First update the clock, if present.
+        if (mDigitalClock != null) {
+            mDigitalClock.updateTime();
+            updateClockAlign();
+        }
+        refreshWeather();
+
+        mUpdateMonitor.registerInfoCallback(mInfoCallback);
+        mUpdateMonitor.registerSimStateCallback(mSimStateCallback);
+        resetStatusInfo();
+        // Issue the biometric unlock failure message in a centralized place
+        // TODO: we either need to make the Face Unlock multiple failures string a more general
+        // 'biometric unlock' or have each biometric unlock handle this on their own.
+        if (mUpdateMonitor.getMaxBiometricUnlockAttemptsReached()) {
+            setInstructionText(getContext().getString(R.string.faceunlock_multiple_failures));
+        }
+    }
+
+    void resetStatusInfo() {
+        mInstructionText = null;
+        mShowingBatteryInfo = mUpdateMonitor.shouldShowBatteryInfo();
+        mPluggedIn = mUpdateMonitor.isDevicePluggedIn();
+        mBatteryLevel = mUpdateMonitor.getBatteryLevel();
+        mAlwaysShowBattery = KeyguardUpdateMonitor.shouldAlwaysShowBatteryInfo(getContext());
+        updateStatusLines(true);
+    }
+
+    /**
+     * Update the status lines based on these rules:
+     * AlarmStatus: Alarm state always gets it's own line.
+     * Status1 is shared between help, battery status and generic unlock instructions,
+     * prioritized in that order.
+     * @param showStatusLines status lines are shown if true
+     */
+    void updateStatusLines(boolean showStatusLines) {
+        if (DEBUG) Log.v(TAG, "updateStatusLines(" + showStatusLines + ")");
+        mShowingStatus = showStatusLines;
+        updateAlarmInfo();
+        updateOwnerInfo();
+        updateStatus1();
+        updateCarrierText();
+    }
+
+    private void updateAlarmInfo() {
+        if (mAlarmStatusView != null) {
+            String nextAlarm = mLockPatternUtils.getNextAlarm();
+            boolean showAlarm = mShowingStatus && !TextUtils.isEmpty(nextAlarm);
+            mAlarmStatusView.setText(nextAlarm);
+            mAlarmStatusView.setCompoundDrawablesWithIntrinsicBounds(ALARM_ICON, 0, 0, 0);
+            mAlarmStatusView.setVisibility(showAlarm ? View.VISIBLE : View.GONE);
+        }
+    }
+
+    private void updateOwnerInfo() {
+        final ContentResolver res = getContext().getContentResolver();
+        final boolean ownerInfoEnabled = Settings.Secure.getInt(res,
+                Settings.Secure.LOCK_SCREEN_OWNER_INFO_ENABLED, 1) != 0;
+        mOwnerInfoText = ownerInfoEnabled ?
+                Settings.Secure.getString(res, Settings.Secure.LOCK_SCREEN_OWNER_INFO) : null;
+        if (mOwnerInfoView != null) {
+            mOwnerInfoView.setText(mOwnerInfoText);
+            mOwnerInfoView.setVisibility(TextUtils.isEmpty(mOwnerInfoText) ? View.GONE:View.VISIBLE);
+        }
+    }
+
+    private void updateClockAlign() {
+        final Configuration config = getContext().getResources().getConfiguration();
+        // No alignment on landscape.
+        if (config.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            return;
+        }
+
+        final int clockAlign = Settings.System.getInt(getContext().getContentResolver(),
+                Settings.System.LOCKSCREEN_CLOCK_ALIGN, 2);
+        int margin = (int) Math.round(getContext().getResources().getDimension(
+                R.dimen.keyguard_lockscreen_status_line_font_right_margin));
+
+        // Adjust for each layout
+        if (config.screenWidthDp >= 600) { // sw600dp
+            margin = 0;
+        }
+
+        int leftMargin = 0, rightMargin = 0;
+        int gravity = Gravity.RIGHT;
+
+        switch (clockAlign) {
+        case 0:
+            gravity = Gravity.LEFT;
+            leftMargin = margin;
+            break;
+        case 1:
+            gravity = Gravity.CENTER;
+            break;
+        case 2:
+            rightMargin = margin;
+            break;
+        }
+
+        mDigitalClock.setGravity(gravity);
+        setSpecificMargins(mDigitalClock, leftMargin, -1, rightMargin, -1);
+
+        if (mDateLineView != null) {
+            mDateLineView.setGravity(gravity);
+            setSpecificMargins(mDateLineView, leftMargin, -1, rightMargin, -1);
+        }
+        if (mStatus1View != null) {
+            mStatus1View.setGravity(gravity);
+            setSpecificMargins(mStatus1View, leftMargin, -1, rightMargin, -1);
+        }
+    }
+
+    private void setSpecificMargins(View view, int left, int top, int right,
+            int bottom) {
+        MarginLayoutParams params = (MarginLayoutParams) view.getLayoutParams();
+        if (left != -1) params.leftMargin = left;
+        if (top != -1) params.topMargin = top;
+        if (right != -1) params.rightMargin = right;
+        if (bottom != -1) params.bottomMargin = bottom;
+        view.setLayoutParams(params);
+    }
+
+    private void updateStatus1() {
+        if (mStatus1View != null) {
+            MutableInt icon = new MutableInt(0);
+            CharSequence string = getPriorityTextMessage(icon);
+            mStatus1View.setText(string);
+            mStatus1View.setCompoundDrawablesWithIntrinsicBounds(icon.value, 0, 0, 0);
+            mStatus1View.setVisibility(mShowingStatus ? View.VISIBLE : View.INVISIBLE);
+        }
+    }
+
+    private void updateCarrierText() {
+        if (!inWidgetMode() && mCarrierView != null) {
+            mCarrierView.setText(mCarrierText);
+        }
+    }
+
+    private CharSequence getAltTextMessage(MutableInt icon) {
+        // If we have replaced the status area with a single widget, then this code
+        // prioritizes what to show in that space when all transient messages are gone.
+        CharSequence string = null;
+        if (mShowingBatteryInfo) {
+            // Battery status
+            if (mPluggedIn) {
+                // Charging or charged
+                if (mUpdateMonitor.isDeviceCharged()) {
+                    string = getContext().getString(R.string.lockscreen_charged);
+                } else {
+                    string = getContext().getString(R.string.lockscreen_plugged_in, mBatteryLevel);
+                }
+                icon.value = CHARGING_ICON;
+            } else if (mBatteryLevel < KeyguardUpdateMonitor.LOW_BATTERY_THRESHOLD) {
+                // Battery is low
+                string = getContext().getString(R.string.lockscreen_low_battery, mBatteryLevel);
+                icon.value = BATTERY_LOW_ICON;
+            } else if (mAlwaysShowBattery) {
+                // Discharging
+                string = getContext().getString(R.string.lockscreen_discharging, mBatteryLevel);
+                icon.value = DISCHARGING_ICON;
+            }
+        } else {
+            string = mCarrierText;
+        }
+        return string;
+    }
+
+    private CharSequence getPriorityTextMessage(MutableInt icon) {
+        CharSequence string = null;
+        if (!TextUtils.isEmpty(mInstructionText)) {
+            // Instructions only
+            string = mInstructionText;
+            icon.value = LOCK_ICON;
+        } else if (mShowingBatteryInfo) {
+            // Battery status
+            if (mPluggedIn) {
+                // Charging or charged
+                if (mUpdateMonitor.isDeviceCharged()) {
+                    string = getContext().getString(R.string.lockscreen_charged);
+                } else {
+                    string = getContext().getString(R.string.lockscreen_plugged_in, mBatteryLevel);
+                }
+                icon.value = CHARGING_ICON;
+            } else if (mBatteryLevel < KeyguardUpdateMonitor.LOW_BATTERY_THRESHOLD) {
+                // Battery is low
+                string = getContext().getString(R.string.lockscreen_low_battery, mBatteryLevel);
+                icon.value = BATTERY_LOW_ICON;
+            } else if (mAlwaysShowBattery) {
+                // Discharging
+                string = getContext().getString(R.string.lockscreen_discharging, mBatteryLevel);
+                icon.value = DISCHARGING_ICON;
+            }
+        } else if (!inWidgetMode() && mOwnerInfoView == null && mOwnerInfoText != null) {
+            // OwnerInfo shows in status if we don't have a dedicated widget
+            string = mOwnerInfoText;
+        }
+        return string;
+    }
+
+    void refreshDate() {
+        if (mDateView != null) {
+            mDateView.setText(DateFormat.format(mDateFormatString, new Date()));
+        }
+    }
+
+    /**
+     * Determine the current status of the lock screen given the sim state and other stuff.
+     */
+    public StatusMode getStatusForIccState(IccCardConstants.State simState) {
+        // Since reading the SIM may take a while, we assume it is present until told otherwise.
+        if (simState == null) {
+            return StatusMode.Normal;
+        }
+
+        final boolean missingAndNotProvisioned = (!mUpdateMonitor.isDeviceProvisioned()
+                && (simState == IccCardConstants.State.ABSENT ||
+                        simState == IccCardConstants.State.PERM_DISABLED));
+
+        // Assume we're NETWORK_LOCKED if not provisioned
+        simState = missingAndNotProvisioned ? IccCardConstants.State.NETWORK_LOCKED : simState;
+        switch (simState) {
+            case ABSENT:
+                return StatusMode.SimMissing;
+            case NETWORK_LOCKED:
+                return StatusMode.SimMissingLocked;
+            case NOT_READY:
+                return StatusMode.SimMissing;
+            case PIN_REQUIRED:
+                return StatusMode.SimLocked;
+            case PUK_REQUIRED:
+                return StatusMode.SimPukLocked;
+            case READY:
+                return StatusMode.Normal;
+            case PERM_DISABLED:
+                return StatusMode.SimPermDisabled;
+            case UNKNOWN:
+                return StatusMode.SimMissing;
+        }
+        return StatusMode.SimMissing;
+    }
+
+    private Context getContext() {
+        return mContainer.getContext();
+    }
+
+    /**
+     * Update carrier text, carrier help and emergency button to match the current status based
+     * on SIM state.
+     *
+     * @param simState
+     */
+    private void updateCarrierStateWithSimStatus(IccCardConstants.State simState) {
+        if (DEBUG) Log.d(TAG, "updateCarrierTextWithSimStatus(), simState = " + simState);
+
+        CharSequence carrierText = null;
+        int carrierHelpTextId = 0;
+        mEmergencyButtonEnabledBecauseSimLocked = false;
+        mStatus = getStatusForIccState(simState);
+        mSimState = simState;
+        switch (mStatus) {
+            case Normal:
+                carrierText = makeCarierString(mPlmn, mSpn);
+                break;
+
+            case NetworkLocked:
+                carrierText = makeCarrierStringOnEmergencyCapable(
+                        getContext().getText(R.string.lockscreen_network_locked_message),
+                        mPlmn);
+                carrierHelpTextId = R.string.lockscreen_instructions_when_pattern_disabled;
+                break;
+
+            case SimMissing:
+                // Shows "No SIM card | Emergency calls only" on devices that are voice-capable.
+                // This depends on mPlmn containing the text "Emergency calls only" when the radio
+                // has some connectivity. Otherwise, it should be null or empty and just show
+                // "No SIM card"
+                carrierText =  makeCarrierStringOnEmergencyCapable(
+                        getContext().getText(R.string.lockscreen_missing_sim_message_short),
+                        mPlmn);
+                carrierHelpTextId = R.string.lockscreen_missing_sim_instructions_long;
+                break;
+
+            case SimPermDisabled:
+                carrierText = getContext().getText(
+                        R.string.lockscreen_permanent_disabled_sim_message_short);
+                carrierHelpTextId = R.string.lockscreen_permanent_disabled_sim_instructions;
+                mEmergencyButtonEnabledBecauseSimLocked = true;
+                break;
+
+            case SimMissingLocked:
+                carrierText =  makeCarrierStringOnEmergencyCapable(
+                        getContext().getText(R.string.lockscreen_missing_sim_message_short),
+                        mPlmn);
+                carrierHelpTextId = R.string.lockscreen_missing_sim_instructions;
+                mEmergencyButtonEnabledBecauseSimLocked = true;
+                break;
+
+            case SimLocked:
+                carrierText = makeCarrierStringOnEmergencyCapable(
+                        getContext().getText(R.string.lockscreen_sim_locked_message),
+                        mPlmn);
+                mEmergencyButtonEnabledBecauseSimLocked = true;
+                break;
+
+            case SimPukLocked:
+                carrierText = makeCarrierStringOnEmergencyCapable(
+                        getContext().getText(R.string.lockscreen_sim_puk_locked_message),
+                        mPlmn);
+                if (!mLockPatternUtils.isPukUnlockScreenEnable()) {
+                    // This means we're showing the PUK unlock screen
+                    mEmergencyButtonEnabledBecauseSimLocked = true;
+                }
+                break;
+        }
+
+        String customLabel;
+        customLabel = Settings.System.getString(getContext().getContentResolver(),
+            Settings.System.CUSTOM_CARRIER_LABEL);
+        if(customLabel == null || customLabel.length() == 0)
+            setCarrierText(carrierText);
+        else
+            setCarrierText(customLabel);
+
+        setCarrierHelpText(carrierHelpTextId);
+        updateEmergencyCallButtonState(mPhoneState);
+    }
+
+
+    /*
+     * Add emergencyCallMessage to carrier string only if phone supports emergency calls.
+     */
+    private CharSequence makeCarrierStringOnEmergencyCapable(
+            CharSequence simMessage, CharSequence emergencyCallMessage) {
+        if (mLockPatternUtils.isEmergencyCallCapable()) {
+            return makeCarierString(simMessage, emergencyCallMessage);
+        }
+        return simMessage;
+    }
+
+    private View findViewById(int id) {
+        return mContainer.findViewById(id);
+    }
+
+    /**
+     * The status of this lock screen. Primarily used for widgets on LockScreen.
+     */
+    enum StatusMode {
+        /**
+         * Normal case (sim card present, it's not locked)
+         */
+        Normal(true),
+
+        /**
+         * The sim card is 'network locked'.
+         */
+        NetworkLocked(true),
+
+        /**
+         * The sim card is missing.
+         */
+        SimMissing(false),
+
+        /**
+         * The sim card is missing, and this is the device isn't provisioned, so we don't let
+         * them get past the screen.
+         */
+        SimMissingLocked(false),
+
+        /**
+         * The sim card is PUK locked, meaning they've entered the wrong sim unlock code too many
+         * times.
+         */
+        SimPukLocked(false),
+
+        /**
+         * The sim card is locked.
+         */
+        SimLocked(true),
+
+        /**
+         * The sim card is permanently disabled due to puk unlock failure
+         */
+        SimPermDisabled(false);
+
+        private final boolean mShowStatusLines;
+
+        StatusMode(boolean mShowStatusLines) {
+            this.mShowStatusLines = mShowStatusLines;
+        }
+
+        /**
+         * @return Whether the status lines (battery level and / or next alarm) are shown while
+         *         in this state.  Mostly dictated by whether this is room for them.
+         */
+        public boolean shouldShowStatusLines() {
+            return mShowStatusLines;
+        }
+    }
+
+    private void updateEmergencyCallButtonState(int phoneState) {
+        if (mEmergencyCallButton != null) {
+            boolean enabledBecauseSimLocked =
+                    mLockPatternUtils.isEmergencyCallEnabledWhileSimLocked()
+                    && mEmergencyButtonEnabledBecauseSimLocked;
+            boolean shown = mEmergencyCallButtonEnabledInScreen || enabledBecauseSimLocked;
+            mLockPatternUtils.updateEmergencyCallButtonState(mEmergencyCallButton,
+                    phoneState, shown);
+        }
+    }
+
+    private InfoCallbackImpl mInfoCallback = new InfoCallbackImpl() {
+
+        @Override
+        public void onRefreshBatteryInfo(boolean showBatteryInfo, boolean pluggedIn,
+                int batteryLevel) {
+            mShowingBatteryInfo = showBatteryInfo;
+            mPluggedIn = pluggedIn;
+            mBatteryLevel = batteryLevel;
+            final MutableInt tmpIcon = new MutableInt(0);
+            update(BATTERY_INFO, getAltTextMessage(tmpIcon));
+        }
+
+        @Override
+        public void onTimeChanged() {
+            refreshDate();
+            refreshWeather();
+        }
+
+        @Override
+        public void onRefreshCarrierInfo(CharSequence plmn, CharSequence spn) {
+            mPlmn = plmn;
+            mSpn = spn;
+            updateCarrierStateWithSimStatus(mSimState);
+        }
+
+        @Override
+        public void onPhoneStateChanged(int phoneState) {
+            mPhoneState = phoneState;
+            updateEmergencyCallButtonState(phoneState);
+        }
+
+    };
+
+    private SimStateCallback mSimStateCallback = new SimStateCallback() {
+
+        public void onSimStateChanged(IccCardConstants.State simState) {
+            updateCarrierStateWithSimStatus(simState);
+        }
+    };
+
+    public void onClick(View v) {
+        if (v == mEmergencyCallButton) {
+            mCallback.takeEmergencyCallAction();
+        } else if (v == mWeatherPanel) {
+            // Indicate we are refreshing
+            if (mWeatherCondition != null) {
+                mWeatherCondition.setText(R.string.weather_refreshing);
+            }
+
+            mCallback.pokeWakelock();
+            if (!mWeatherRefreshing) {
+                mHandler.sendEmptyMessage(QUERY_WEATHER);
+            }
+        }
+    }
+
+    /**
+     * Performs concentenation of PLMN/SPN
+     * @param plmn
+     * @param spn
+     * @return
+     */
+    private static CharSequence makeCarierString(CharSequence plmn, CharSequence spn) {
+        final boolean plmnValid = !TextUtils.isEmpty(plmn);
+        final boolean spnValid = !TextUtils.isEmpty(spn);
+        if (plmnValid && spnValid) {
+            return plmn + "|" + spn;
+        } else if (plmnValid) {
+            return plmn;
+        } else if (spnValid) {
+            return spn;
+        } else {
+            return "";
+        }
     }
 }
