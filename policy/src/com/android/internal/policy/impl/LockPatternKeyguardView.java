@@ -62,6 +62,7 @@ import android.view.accessibility.AccessibilityManager;
 
 import com.android.internal.R;
 import com.android.internal.policy.impl.KeyguardUpdateMonitor.InfoCallbackImpl;
+import com.android.internal.telephony.IccCardConstants;
 import com.android.internal.widget.LockPatternUtils;
 import com.android.internal.widget.LockScreenWidgetCallback;
 import com.android.internal.widget.TransportControlView;

@@ -1397,14 +1397,6 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                     com.android.internal.R.bool.config_showNavigationBar);
             mHasNavigationBar = Settings.System.getBoolean(mContext.getContentResolver(),
                     Settings.System.NAVIGATION_BAR_SHOW, showByDefault);
-                    
-	    // Allow a system property to override this. Used by the emulator.
-	    // See also hasNavigationBar().
-	    String navBarOverride = SystemProperties.get("qemu.hw.mainkeys");
-	    if (! "".equals(navBarOverride)) {
-		if      (navBarOverride.equals("1")) mHasNavigationBar = false;
-		else if (navBarOverride.equals("0")) mHasNavigationBar = true;
-		else mHasNavigationBar = false;
 
             /*
              * at first boot up, we need to make sure navbar gets created
@@ -1417,15 +1409,13 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                 mNavBarFirstBootFlag = false;
             }
         } else {
-            mHasNavigationBar = false;
-        }
-
-        if (mNavBarFirstBootFlag){
-            mHasNavigationBar = (showByDefault == 1);
-            mNavBarFirstBootFlag = false;
-            // at first boot up, we need to make sure navbar gets created (or obey framework setting).
-            // this should quickly get over-ridden by the settings observer if it was
-            // disabled by the user.
+            // Allow a system property to override this. Used by the emulator.
+	    // See also hasNavigationBar().
+	    String navBarOverride = SystemProperties.get("qemu.hw.mainkeys");
+	    if (! "".equals(navBarOverride)) {
+		if      (navBarOverride.equals("1")) mHasNavigationBar = false;
+		else if (navBarOverride.equals("0")) mHasNavigationBar = true;
+		else mHasNavigationBar = false;
         }
 
         if (!mHasNavigationBar) {

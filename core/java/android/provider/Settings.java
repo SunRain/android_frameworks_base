@@ -2662,12 +2662,6 @@ public final class Settings {
         public static final String LOCKSCREEN_BACKGROUND = "lockscreen_background";
 
         /**
-         * Show the weather on the lock screen
-         * @hide
-         */
-        public static final String LOCKSCREEN_WEATHER = "lockscreen_weather";
-
-        /**
          * Show the current weather location on the lock screen
          * @hide
          */
@@ -2708,12 +2702,6 @@ public final class Settings {
          * @hide
          */
         public static final String WEATHER_INVERT_LOWHIGH = "weather_invert_lowhigh";
-
-        /**
-         * Whether to show the next calendar event
-         * @hide
-         */
-        public static final String LOCKSCREEN_CALENDAR = "lockscreen_calendar";
 
         /**
          * Whether to show the next calendar event's location
@@ -3435,11 +3423,6 @@ public final class Settings {
          */
         public static final String LOCKSCREEN_CUSTOM_TEXT_COLOR = "lockscreen_custom_text_color";
 
-        /**
-         * Setting to allow % on lockscreen always showing.
-         * @hide
-         */
-        public static final String LOCKSCREEN_BATTERY = "lockscreen_battery";
 
         /**
          * Whether to show weather on lockscreen
@@ -3660,11 +3643,6 @@ public final class Settings {
 	 * @hide
 	 */
         public static final String NAVIGATION_BAR_BUTTON_ALPHA = "navigation_bar_button_alpha";
-
-        /**
-         * @hide
-         */
-        public static final String LOCKSCREEN_WEATHER_TYPE = "lockscreen_weather_type";
 
         /**
          * @hide

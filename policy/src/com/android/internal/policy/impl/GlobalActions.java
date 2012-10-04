@@ -334,7 +334,8 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
                         return true;
                     }
                 });
-                
+          
+        }  
         // Next NavBar Hide
         if(mEnableNavBarHideToggle) {
             mItems.add(mNavBarHideToggle);
