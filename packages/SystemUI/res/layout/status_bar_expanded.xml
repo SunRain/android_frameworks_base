@@ -45,13 +45,20 @@
         android:visibility="invisible"
         />
 
-    <FrameLayout
+    <!--FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_marginBottom="@dimen/close_handle_underlap"
+        -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:layout_marginBottom="@dimen/close_handle_underlap"
         >
 
-        <include layout="@layout/status_bar_expanded_header"
+        <include
+            layout="@layout/status_bar_expanded_header"
             android:layout_width="match_parent"
             android:layout_height="@dimen/notification_panel_header_height"
             />
@@ -61,7 +68,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:fadingEdge="none"
-            android:overScrollMode="ifContentScrolls"
+            android:overScrollMode="ifContentScrolls" >
             android:layout_marginTop="@dimen/notification_panel_header_height"
             >
             <LinearLayout
@@ -80,7 +87,8 @@
 
             </LinearLayout>
         </ScrollView>
-    </FrameLayout>
+    <!--/FrameLayout -->
+    </LinearLayout>
 
     <com.android.systemui.statusbar.phone.CloseDragHandle android:id="@+id/close"
         android:layout_width="match_parent"

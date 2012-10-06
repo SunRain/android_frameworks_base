@@ -75,7 +75,7 @@ import com.android.systemui.R;
 public abstract class BaseStatusBar extends SystemUI implements
     CommandQueue.Callbacks, RecentsPanelView.OnRecentsPanelVisibilityChangedListener {
     static final String TAG = "StatusBar";
-    private static final boolean DEBUG = false;
+    private static final boolean DEBUG = true;
 
     protected static final int MSG_OPEN_RECENTS_PANEL = 1020;
     protected static final int MSG_CLOSE_RECENTS_PANEL = 1021;
@@ -117,7 +117,7 @@ public abstract class BaseStatusBar extends SystemUI implements
 
     protected PopupMenu mNotificationBlamePopup;
 
-    protected FrameLayout mStatusBarContainer;
+    //protected FrameLayout mStatusBarContainer;
 
     // UI-specific methods
 

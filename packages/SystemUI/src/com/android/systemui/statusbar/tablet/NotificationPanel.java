@@ -46,7 +46,7 @@ public class NotificationPanel extends RelativeLayout implements StatusBarPanel,
     private NotificationRowLayout latestItems;
 
     static final String TAG = "Tablet/NotificationPanel";
-    static final boolean DEBUG = false;
+    static final boolean DEBUG = true;
 
     final static int PANEL_FADE_DURATION = 150;
 
