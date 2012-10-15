@@ -239,7 +239,13 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
 
         mItems = new ArrayList<Action>();
 
-        // first: power off
+        // first: silent mode
+        if (SHOW_SILENT_TOGGLE) {
+            mItems.add(mSilentModeAction);
+        }
+        
+        
+        // next: power off
         mItems.add(
             new SinglePressAction(
                     com.android.internal.R.drawable.ic_lock_power_off,
@@ -371,10 +377,6 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
             }
         }
 
-        // last: silent mode
-        if (SHOW_SILENT_TOGGLE) {
-            mItems.add(mSilentModeAction);
-        }
 
         mAdapter = new MyAdapter();
 
