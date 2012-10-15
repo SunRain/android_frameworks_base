@@ -3184,12 +3184,6 @@ public final class Settings {
          */
         public static final String TABLET_UI = "tablet_ui";
 
-        /**
-         * Show the NavBar dialog in Power menu
-         * @hide
-         */
-        public static final String POWER_DIALOG_SHOW_NAVBAR_HIDE = "power_dialog_show_navbar_hide";
-
          /**
 		  * Used to determine if the NavBar should be enabled on devices that do not
           * otherwise have a NavBar
