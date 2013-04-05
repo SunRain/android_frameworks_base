@@ -857,7 +857,7 @@ final class GsmServiceStateTracker extends ServiceStateTracker {
             operatorNumeric = ss.getOperatorNumeric();
             phone.setSystemProperty(TelephonyProperties.PROPERTY_OPERATOR_NUMERIC, operatorNumeric);
 
-            if (operatorNumeric == null) {
+            if (operatorNumeric == null || operatorNumeric.equals("")) {
                 if (DBG) log("operatorNumeric is null");
                 phone.setSystemProperty(TelephonyProperties.PROPERTY_OPERATOR_ISO_COUNTRY, "");
                 mGotCountryCode = false;

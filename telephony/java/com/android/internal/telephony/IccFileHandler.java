@@ -167,9 +167,16 @@ public abstract class IccFileHandler extends Handler implements IccConstants {
                         onLoaded));
 
         // TODO(): Verify when path changes are done.
+        /* FIXME: Hashcode -- Using Motorola Code */
+        mCi.iccIOForApp(COMMAND_READ_RECORD, IccConstants.EF_IMG, getEFPath(IccConstants.EF_IMG),
+                recordNum, READ_RECORD_MODE_ABSOLUTE,
+                GET_RESPONSE_EF_IMG_SIZE_BYTES, null, null, mAid, response);
+
+        /*
         mCi.iccIOForApp(COMMAND_GET_RESPONSE, IccConstants.EF_IMG, "img",
                 recordNum, READ_RECORD_MODE_ABSOLUTE,
                 GET_RESPONSE_EF_IMG_SIZE_BYTES, null, null, mAid, response);
+        */
     }
 
     /**
@@ -239,7 +246,13 @@ public abstract class IccFileHandler extends Handler implements IccConstants {
         Message response = obtainMessage(EVENT_READ_ICON_DONE, fileid, 0,
                 onLoaded);
 
-        mCi.iccIOForApp(COMMAND_READ_BINARY, fileid, "img", highOffset, lowOffset,
+        String s;
+        if(fileid >= 0x4f01 && fileid <= 0x4f05)
+            s = MF_SIM + DF_TELECOM + DF_GRAPHICS;
+        else
+            s = getEFPath(fileid);
+
+        mCi.iccIOForApp(COMMAND_READ_BINARY, fileid, s, highOffset, lowOffset,
                 length, null, null, mAid, response);
     }
 
@@ -525,6 +538,7 @@ public abstract class IccFileHandler extends Handler implements IccConstants {
         case EF_ADN:
         case EF_FDN:
         case EF_MSISDN:
+        case EF_SMSP:
         case EF_SDN:
         case EF_EXT1:
         case EF_EXT2:
