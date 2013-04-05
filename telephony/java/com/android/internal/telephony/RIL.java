@@ -3397,6 +3397,7 @@ public class RIL extends BaseCommands implements CommandsInterface {
        } else if (radioString.equals("CDMA - EvDo rev. B")) {
            radioType = NETWORK_TYPE_EVDO_B;
        /* FIXME HASH: END Motorola Code */
+
        } else {
            radioType = NETWORK_TYPE_UNKNOWN;
        }

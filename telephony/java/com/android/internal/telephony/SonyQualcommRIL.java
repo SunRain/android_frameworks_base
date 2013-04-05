@@ -147,5 +147,4 @@ public class SonyQualcommRIL extends QualcommSharedRIL implements CommandsInterf
     setNetworkSelectionModeManual(String operatorNumeric, Message response) {
         setNetworkSelectionMode(operatorNumeric, response);
     }
-
 }
