@@ -35,6 +35,7 @@ SECONDARY_FRAMEWORKS_SUBDIRS := \
         core/java/android/test \
         core/java/android/gesture \
         core/java/android/speech/srec \
+        fmradio/java/com/stericsson/hardware/fm \
         media/java/android/media/videoeditor \
         media/mca/effect/java/android/media/effect \
         media/mca/effect/java/android/media/effect/effects \
